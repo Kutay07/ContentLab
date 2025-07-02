@@ -1,7 +1,7 @@
 export { default as MobileScreen } from "./preview/MobileScreen";
 export { default as MobileScreenContainer } from "./preview/MobileScreenContainer";
 export { default as ContentPreview } from "./preview/ContentPreview";
-export { default as ContentPreviewExample } from "./preview/ContentPreviewExample";
+export { default as LevelHierarchyTextView } from "./preview/LevelHierarchyTextView";
 export { default as LevelGroupDropdown } from "./preview/LevelGroupDropdown";
 export { default as LevelDropdown } from "./preview/LevelDropdown";
 export { default as ComponentPreviewCard } from "./preview/ComponentPreviewCard";

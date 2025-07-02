@@ -24,3 +24,7 @@ export interface LevelGroupItem {
 }
 
 export type LevelHierarchy = LevelGroupItem[];
+
+// burdaki id değerleri database den gerçek id mi alıyor onu kontrol et.
+// yeni oluşturulan herşeyin id sini burda üretme planımız var
+// databasede varolan herşeyin id'sini korumalıyız.

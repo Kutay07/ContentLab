@@ -6,7 +6,7 @@ import { useAppStore } from '@/stores/app';
 import { APPS_CONFIG, AppConfig } from '@/config/apps';
 import { testConnection, checkDatabaseTables, clearSupabaseClient } from '@/services/supabase';
 import { LearningService } from '@/services/learning-service';
-import { ContentPreview } from '@/components/global';
+import { ContentPreview, LevelHierarchyTextView } from '@/components/global';
 import { LevelHierarchy } from '@/types/LevelHierarchy';
 
 // Örnek veri yapısı
@@ -353,7 +353,10 @@ export default function AppManagementPage() {
 
         {/* Level Group Manager */}
         {isConnected && levelData && (
-          <ContentPreview data={levelData} />
+          <div className="space-y-6">
+            <ContentPreview data={levelData} />
+            <LevelHierarchyTextView data={levelData} />
+          </div>
         )}
         
         {/* Veri yükleniyor durumu */}
