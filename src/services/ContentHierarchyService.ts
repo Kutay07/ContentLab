@@ -43,6 +43,9 @@ export class ContentHierarchyService {
   private isInTransaction = false;
   private transactionStartState: LevelHierarchy | null = null;
 
+  // Baseline for diff comparison
+  private baselineHierarchy: LevelHierarchy = [];
+
   private constructor() {}
 
   /**
@@ -120,9 +123,7 @@ export class ContentHierarchyService {
   /**
    * Level'ı ID ile bulur
    */
-  private findLevelById(
-    levelId: string
-  ): {
+  private findLevelById(levelId: string): {
     group: LevelGroupItem;
     level: LevelItem;
     groupIndex: number;
@@ -518,6 +519,303 @@ export class ContentHierarchyService {
     this.addToCommandHistory("clearUndoHistory", {});
   }
 
+  // ============ EXTENDED UNDO/REDO METHODS ============
+
+  /**
+   * Undo stack boyutunu döner
+   */
+  public getUndoStackSize(): number {
+    return this.undoStack.length;
+  }
+
+  /**
+   * Redo stack boyutunu döner
+   */
+  public getRedoStackSize(): number {
+    return this.redoStack.length;
+  }
+
+  /**
+   * Son N komutu label-leriyle döner (dropdown listesi için)
+   */
+  public peekUndoHistory(
+    limit: number = 10
+  ): Array<{ id: string; label: string; timestamp: number }> {
+    const recentCommands = this.commandHistory
+      .slice(-Math.min(limit, this.commandHistory.length))
+      .reverse();
+
+    return recentCommands.map((cmd, index) => ({
+      id: `${cmd.timestamp}-${index}`,
+      label: this.formatCommandLabel(cmd),
+      timestamp: cmd.timestamp,
+    }));
+  }
+
+  /**
+   * Komut etiketini formatlar
+   */
+  private formatCommandLabel(command: Command): string {
+    const typeLabels: Record<string, string> = {
+      addLevelGroup: "Seviye Grubu Eklendi",
+      updateLevelGroup: "Seviye Grubu Güncellendi",
+      deleteLevelGroup: "Seviye Grubu Silindi",
+      addLevel: "Seviye Eklendi",
+      updateLevel: "Seviye Güncellendi",
+      deleteLevel: "Seviye Silindi",
+      addComponent: "Bileşen Eklendi",
+      updateComponent: "Bileşen Güncellendi",
+      deleteComponent: "Bileşen Silindi",
+      moveLevel: "Seviye Taşındı",
+      moveComponent: "Bileşen Taşındı",
+      deserialize: "Veri Yüklendi",
+      repairHierarchy: "Yapı Onarıldı",
+    };
+
+    let label = typeLabels[command.type] || command.type;
+
+    // Payload'dan ek bilgi ekle
+    if (command.payload?.title) {
+      label += `: ${command.payload.title}`;
+    } else if (command.payload?.newLevel?.title) {
+      label += `: ${command.payload.newLevel.title}`;
+    } else if (command.payload?.newComponent?.display_name) {
+      label += `: ${command.payload.newComponent.display_name}`;
+    }
+
+    return label;
+  }
+
+  /**
+   * Çoklu geri al - tek seferde birden fazla adım geri alır
+   */
+  public undoSteps(count: number): void {
+    if (count <= 0 || this.undoStack.length === 0) return;
+
+    const actualSteps = Math.min(count, this.undoStack.length);
+
+    // Mevcut state'i redo stack'e ekle
+    this.redoStack.push(this.deepClone(this.hierarchy));
+
+    // Belirtilen sayıda adım geri al
+    for (let i = 0; i < actualSteps; i++) {
+      if (this.undoStack.length > 0) {
+        const previousState = this.undoStack.pop()!;
+        if (i === actualSteps - 1) {
+          // Son adımda hierarchy'yi güncelle
+          this.hierarchy = previousState;
+        } else {
+          // Ara adımları redo stack'e ekle
+          this.redoStack.push(previousState);
+        }
+      }
+    }
+
+    this.addToCommandHistory("undoSteps", { count: actualSteps });
+    this.notifyListeners();
+  }
+
+  // ============ BASELINE MANAGEMENT ============
+
+  /**
+   * Baseline hierarchy'yi ayarlar (diff için referans)
+   */
+  public setBaseline(baseline?: LevelHierarchy): void {
+    this.baselineHierarchy = baseline
+      ? this.deepClone(baseline)
+      : this.deepClone(this.hierarchy);
+    this.addToCommandHistory("setBaseline", { timestamp: Date.now() });
+  }
+
+  /**
+   * Baseline hierarchy'yi döner
+   */
+  public getBaseline(): LevelHierarchy {
+    return this.deepClone(this.baselineHierarchy);
+  }
+
+  /**
+   * Mevcut hierarchy ile baseline arasındaki farkları hesaplar
+   */
+  public diffWithBaseline(baseline?: LevelHierarchy): {
+    addedIds: Set<string>;
+    updatedIds: Set<string>;
+  } {
+    const referenceBaseline = baseline || this.baselineHierarchy;
+    const addedIds = new Set<string>();
+    const updatedIds = new Set<string>();
+
+    // Baseline'daki tüm ID'leri topla
+    const baselineIds = this.extractAllIds(referenceBaseline);
+
+    // Mevcut hierarchy'deki tüm öğeleri kontrol et
+    this.hierarchy.forEach((group) => {
+      // LevelGroup kontrolü
+      if (!baselineIds.groups.has(group.id)) {
+        addedIds.add(group.id);
+      } else if (this.hasGroupChanged(group, referenceBaseline)) {
+        updatedIds.add(group.id);
+      }
+
+      // Level kontrolü
+      group.levels.forEach((level) => {
+        if (!baselineIds.levels.has(level.id)) {
+          addedIds.add(level.id);
+        } else if (this.hasLevelChanged(level, referenceBaseline)) {
+          updatedIds.add(level.id);
+        }
+
+        // Component kontrolü
+        level.components.forEach((component) => {
+          if (!baselineIds.components.has(component.id)) {
+            addedIds.add(component.id);
+          } else if (this.hasComponentChanged(component, referenceBaseline)) {
+            updatedIds.add(component.id);
+          }
+        });
+      });
+    });
+
+    return { addedIds, updatedIds };
+  }
+
+  /**
+   * Hierarchy'den tüm ID'leri çıkarır
+   */
+  private extractAllIds(hierarchy: LevelHierarchy): {
+    groups: Set<string>;
+    levels: Set<string>;
+    components: Set<string>;
+  } {
+    const groups = new Set<string>();
+    const levels = new Set<string>();
+    const components = new Set<string>();
+
+    hierarchy.forEach((group) => {
+      groups.add(group.id);
+      group.levels.forEach((level) => {
+        levels.add(level.id);
+        level.components.forEach((component) => {
+          components.add(component.id);
+        });
+      });
+    });
+
+    return { groups, levels, components };
+  }
+
+  /**
+   * Group'un değişip değişmediğini kontrol eder
+   */
+  private hasGroupChanged(
+    group: LevelGroupItem,
+    baseline: LevelHierarchy
+  ): boolean {
+    const baselineGroup = baseline.find((g) => g.id === group.id);
+    if (!baselineGroup) return false;
+
+    return (
+      JSON.stringify({
+        title: group.title,
+        order: group.order,
+      }) !==
+      JSON.stringify({
+        title: baselineGroup.title,
+        order: baselineGroup.order,
+      })
+    );
+  }
+
+  /**
+   * Level'ın değişip değişmediğini kontrol eder
+   */
+  private hasLevelChanged(level: LevelItem, baseline: LevelHierarchy): boolean {
+    let baselineLevel: LevelItem | undefined;
+
+    for (const group of baseline) {
+      baselineLevel = group.levels.find((l) => l.id === level.id);
+      if (baselineLevel) break;
+    }
+
+    if (!baselineLevel) return false;
+
+    return (
+      JSON.stringify({
+        title: level.title,
+        icon_key: level.icon_key,
+        icon_family: level.icon_family,
+        xp_reward: level.xp_reward,
+        order: level.order,
+      }) !==
+      JSON.stringify({
+        title: baselineLevel.title,
+        icon_key: baselineLevel.icon_key,
+        icon_family: baselineLevel.icon_family,
+        xp_reward: baselineLevel.xp_reward,
+        order: baselineLevel.order,
+      })
+    );
+  }
+
+  /**
+   * Component'in değişip değişmediğini kontrol eder
+   */
+  private hasComponentChanged(
+    component: ComponentItem,
+    baseline: LevelHierarchy
+  ): boolean {
+    let baselineComponent: ComponentItem | undefined;
+
+    for (const group of baseline) {
+      for (const level of group.levels) {
+        baselineComponent = level.components.find((c) => c.id === component.id);
+        if (baselineComponent) break;
+      }
+      if (baselineComponent) break;
+    }
+
+    if (!baselineComponent) return false;
+
+    return (
+      JSON.stringify({
+        type: component.type,
+        display_name: component.display_name,
+        content: component.content,
+        order: component.order,
+      }) !==
+      JSON.stringify({
+        type: baselineComponent.type,
+        display_name: baselineComponent.display_name,
+        content: baselineComponent.content,
+        order: baselineComponent.order,
+      })
+    );
+  }
+
+  // ============ DRAFT MANAGEMENT SHORTCUTS ============
+
+  /**
+   * Taslak export'u - serialize() metodunun kısayolu
+   */
+  public exportDraft(): string {
+    return this.serialize();
+  }
+
+  /**
+   * Taslak import'u - deserialize() metodunun kısayolu
+   */
+  public importDraft(json: string): void {
+    this.deserialize(json);
+  }
+
+  /**
+   * Baseline ile senkronizasyon - diff'i sıfırlar
+   */
+  public markSynced(): void {
+    this.setBaseline();
+    this.addToCommandHistory("markSynced", { timestamp: Date.now() });
+  }
+
   // ============ DATA ACCESS METHODS ============
 
   /**
@@ -746,6 +1044,7 @@ export class ContentHierarchyService {
     this.listeners.clear();
     this.isInTransaction = false;
     this.transactionStartState = null;
+    this.baselineHierarchy = [];
     this.notifyListeners();
   }
 

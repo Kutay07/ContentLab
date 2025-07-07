@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth';
+import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useAuthStore } from "@/stores/auth";
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -14,7 +14,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const pathname = usePathname();
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/auth/login'];
+  const publicRoutes = ["/auth/login", "/test-service"];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   useEffect(() => {
@@ -25,12 +25,12 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     // Redirect to login if not authenticated and trying to access protected route
     if (!isAuthenticated && !isPublicRoute) {
-      router.push('/auth/login');
+      router.push("/auth/login");
     }
-    
+
     // Redirect to home if authenticated and trying to access login page
-    if (isAuthenticated && pathname === '/auth/login') {
-      router.push('/');
+    if (isAuthenticated && pathname === "/auth/login") {
+      router.push("/");
     }
   }, [isAuthenticated, isPublicRoute, pathname, router]);
 
@@ -44,4 +44,4 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   }
 
   return <>{children}</>;
-} 
+}
