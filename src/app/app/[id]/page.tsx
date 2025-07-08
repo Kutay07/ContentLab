@@ -1,13 +1,22 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useAppStore } from '@/stores/app';
-import { APPS_CONFIG, AppConfig } from '@/config/apps';
-import { testConnection, checkDatabaseTables, clearSupabaseClient } from '@/services/supabase';
-import { LearningService } from '@/services/learning-service';
-import { ContentPreview, LevelHierarchyTextView } from '@/components/global';
-import { LevelHierarchy } from '@/types/LevelHierarchy';
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useAppStore } from "@/stores/app";
+import { APPS_CONFIG, AppConfig } from "@/config/apps";
+import {
+  testConnection,
+  checkDatabaseTables,
+  clearSupabaseClient,
+} from "@/services/supabase";
+import { LearningService } from "@/services/learning-service";
+import {
+  ContentPreview,
+  LevelHierarchyTextView,
+  HierarchyProvider,
+  ControlBar,
+} from "@/components/global";
+import { LevelHierarchy } from "@/types/LevelHierarchy";
 
 // Örnek veri yapısı
 // const sampleLevelHierarchyData: LevelHierarchy = [
@@ -197,8 +206,9 @@ import { LevelHierarchy } from '@/types/LevelHierarchy';
 export default function AppManagementPage() {
   const params = useParams();
   const router = useRouter();
-  const { selectedApp, setSelectedApp, isConnected, setIsConnected } = useAppStore();
-  
+  const { selectedApp, setSelectedApp, isConnected, setIsConnected } =
+    useAppStore();
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dbTables, setDbTables] = useState<string[]>([]);
@@ -207,10 +217,10 @@ export default function AppManagementPage() {
   // URL'den app ID'sini al ve uygulamayı yükle
   useEffect(() => {
     const appId = params.id as string;
-    const app = APPS_CONFIG.find(a => a.id === appId);
-    
+    const app = APPS_CONFIG.find((a) => a.id === appId);
+
     if (!app) {
-      setError('Uygulama bulunamadı');
+      setError("Uygulama bulunamadı");
       setLoading(false);
       return;
     }
@@ -231,16 +241,18 @@ export default function AppManagementPage() {
     try {
       // Supabase bağlantısını test et
       const connectionSuccess = await testConnection(app);
-      
+
       if (!connectionSuccess) {
-        throw new Error('Supabase bağlantısı kurulamadı');
+        throw new Error("Supabase bağlantısı kurulamadı");
       }
 
       // Veritabanı tablolarını kontrol et
       const tablesResult = await checkDatabaseTables();
-      
+
       if (!tablesResult.success) {
-        throw new Error(tablesResult.error || 'Veritabanı tabloları kontrol edilemedi');
+        throw new Error(
+          tablesResult.error || "Veritabanı tabloları kontrol edilemedi"
+        );
       }
 
       setDbTables(tablesResult.tables);
@@ -249,15 +261,14 @@ export default function AppManagementPage() {
       // Seviye verilerini yükle
       const levelResult = await LearningService.getLevelGroupsWithDetails();
       if (levelResult.error) {
-        console.error('Seviye verileri yüklenemedi:', levelResult.error);
+        console.error("Seviye verileri yüklenemedi:", levelResult.error);
         // Hata durumunda
         setLevelData(null);
       } else {
         setLevelData(levelResult.data);
       }
-      
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
+      setError(err instanceof Error ? err.message : "Bilinmeyen hata");
       setIsConnected(false);
       setLevelData(null);
     } finally {
@@ -269,7 +280,7 @@ export default function AppManagementPage() {
     clearSupabaseClient();
     setSelectedApp(null);
     setIsConnected(false);
-    router.push('/');
+    router.push("/");
   };
 
   if (loading) {
@@ -288,11 +299,23 @@ export default function AppManagementPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-red-500 mb-4">
-            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-16 h-16 mx-auto"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Bağlantı Hatası</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Bağlantı Hatası
+          </h3>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={handleBackToApps}
@@ -331,34 +354,53 @@ export default function AppManagementPage() {
               onClick={handleBackToApps}
               className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
             <span className="text-2xl">{selectedApp.icon}</span>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{selectedApp.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {selectedApp.name}
+              </h1>
               <p className="text-gray-600">{selectedApp.description}</p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-3">
-            <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-              isConnected ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'
-            }`}>
-              {isConnected ? 'Bağlı' : 'Bağlantı Yok'}
+            <span
+              className={`px-3 py-1 text-sm font-medium rounded-full ${
+                isConnected
+                  ? "text-green-600 bg-green-100"
+                  : "text-red-600 bg-red-100"
+              }`}
+            >
+              {isConnected ? "Bağlı" : "Bağlantı Yok"}
             </span>
           </div>
         </div>
 
         {/* Level Group Manager */}
         {isConnected && levelData && (
-          <div className="space-y-6">
-            <ContentPreview data={levelData} />
-            <LevelHierarchyTextView data={levelData} />
-          </div>
+          <HierarchyProvider initialData={levelData}>
+            <div className="space-y-6">
+              <ControlBar />
+              <ContentPreview data={levelData} />
+              <LevelHierarchyTextView data={levelData} />
+            </div>
+          </HierarchyProvider>
         )}
-        
+
         {/* Veri yükleniyor durumu */}
         {isConnected && !levelData && (
           <div className="text-center py-8">
@@ -369,4 +411,4 @@ export default function AppManagementPage() {
       </div>
     </div>
   );
-} 
+}

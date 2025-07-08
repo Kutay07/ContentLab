@@ -49,19 +49,18 @@ diffWithBaseline(baseline: LevelHierarchy): { addedIds: Set<string>; updatedIds:
 Bu metot sadece LevelGroup/Level/Component düzeyinde id setleri döndürür.
  Bileşenler, ID’si kendi listesinde ise nokta gösterecek.
 
-## 3. Header.tsx – Yeni Kontroller
+## 3. Yeni Kontroller İçin Bar
+
+uygulama ekranında önizlemenin üzerinde görüntülenecek bir kontrol barı oluşturulacak.
 
 ### 3.1 Görsel Düzen
 
-Sol kısım: Logo & Aktif App bilgisi (mevcut).
-Sağ kısım:
- a) Undo (ikonlu buton)
+a) Undo (ikonlu buton)
  b) Undo-Dropdown (geçmiş listesi)
  c) Redo butonu
  d) Taslak Adı (input, 160px)
  e) “Taslak Kaydet” butonu
  f) “Taslak Yükle” dropdown’u
- g) Kullanıcı menüsü (mevcut)
 
 ### 3.2 Davranış
 
@@ -165,10 +164,76 @@ E2E (Playwright):
 
 ## Ek Düşünceler & Öngörülmeyenler
 
-• Yetkilendirme: Taslaklar kullanıcıya / ekibe göre ayrılacaksa localStorage anahtarında uid kullanın.
 Performans: Büyük hiyerarşilerde diff hesaplaması pahalı olabilir → memoize edin, useMemo + debounce.
-Çakışma Çözümü: Aynı taslak üzerinde eş-zamanlı düzenleme yapılacaksa servis içine “version” alanı ekleyin.
-i18n: Şu an Türkçe sabit metinler var; ileride next-i18next gibi çözüme göçeceksek label’ları constants dizininde toplayın.
-Accessibility: Renk körlüğü için nokta renklerine ek olarak tooltip içerik sağlayın.
 Analytics/Loglama: addToCommandHistory zaten timestamp tutuyor; bunu gerektiğinde backend’e POST edebilirsiniz.
 Bu plan tamamlandığında ContentHierarchyService tam entegre, geri-al/ileri-al yetenekli, taslak yönetimli ve görsel değişiklik geri bildirimi sunan bir editör altyapısı elde etmiş olacaksınız.
+
+## 11. Yeni Modal Bileşenlerinin Entegrasyonu (AddLevelModal & AddLevelGroupModal)
+
+### 11.1 Amaç
+
+- Hover butonlarına tıklandığında doğrudan servis çağrısı yerine kullanıcıdan başlık almak için modal açmak.
+- Modal kapatıldığında `ContentHierarchyService` üzerinden ilgili **add** operasyonu çalıştırmak.
+
+### 11.2 Yapılacaklar
+
+1. **UI Akışı**
+
+   - `AddLevelButton` üzerine tıklayınca `AddLevelModal` açılacak.
+   - `AddLevelGroupButton` üzerine tıklayınca `AddLevelGroupModal` açılacak.
+   - Modal **Kaydet** butonu `onSave(title)` tetikleyecek.
+
+2. **State Yönetimi**
+
+   - Modal açık/kapalı state’i LevelGroupDropdown & ContentPreview içinde tutulacak (veya merkezi provider’da).
+   - Seçilen **order** değeri hover alanından alınarak modal’a prop olarak geçilecek.
+
+3. **Service Çağrıları**
+
+   - `onSave` içinde:  
+     • LevelGroup için:
+     ```ts
+     service.addLevelGroup({
+       id: uuidv4(),
+       title,
+       order,
+       levels: [],
+     });
+     ```
+     • Level için:
+     ```ts
+     service.addLevel(groupId, {
+       id: uuidv4(),
+       title,
+       order,
+       icon_key: null,
+       icon_family: null,
+       xp_reward: 0,
+       components: [],
+     });
+     ```
+
+4. **Undo/Redo Uyumlu**
+
+   - Modal üzerinden ekleme yapıldığında servis zaten `saveStateToUndo()` çağırdığı için undo/redo sorunsuz çalışacak.
+
+5. **UI Dönütleri**
+
+   - Başarılı ekleme sonrası Toast (opsiyonel).
+   - Hata yakalama ve hata mesajı.
+
+6. **Testler**
+   - Modal aç/kapa render testleri.
+   - `onSave` ile doğru servis metodunun çağrıldığını jest mock’larıyla doğrula.
+
+### 11.3 Dosya Değişiklikleri
+
+- `src/components/global/button/AddLevelButton.tsx`  
+  • onAdd kaldırılacak, yerine `onClick={() => openLevelModal(order, groupId)}`
+- `src/components/global/button/AddLevelGroupButton.tsx`  
+  • Benzer şekilde modal açma fonksiyonu
+- `ContentPreview` & `LevelGroupDropdown`  
+  • Modal state & handler’ları ekle  
+  • İlgili modal JSX’i render et
+
+---

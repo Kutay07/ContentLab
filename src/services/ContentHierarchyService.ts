@@ -36,6 +36,9 @@ export class ContentHierarchyService {
   // Command history for optional logging
   private commandHistory: Command[] = [];
 
+  // Redo command history tracking
+  private redoCommandHistory: Command[] = [];
+
   // Listener management
   private listeners: Set<HierarchyListener> = new Set();
 
@@ -75,6 +78,7 @@ export class ContentHierarchyService {
 
     this.undoStack.push(this.deepClone(this.hierarchy));
     this.redoStack = []; // Yeni operasyon redo stack'i temizler
+    this.redoCommandHistory = []; // Redo command history'yi de temizle
 
     // Undo stack boyutunu sınırla (son 50 adım)
     if (this.undoStack.length > 50) {
@@ -95,6 +99,18 @@ export class ContentHierarchyService {
    * Command history'ye ekler
    */
   private addToCommandHistory(type: string, payload: any): void {
+    // "undo", "redo" ve benzeri yönetim komutlarının geçmişte görünmesini engelle
+    const ignoredTypes = new Set([
+      "undo",
+      "redo",
+      "undoSteps",
+      "clearUndoHistory",
+    ]);
+
+    if (ignoredTypes.has(type)) {
+      return; // Bu tip komutları geçmişe ekleme
+    }
+
     this.commandHistory.push({
       type,
       payload: this.deepClone(payload),
@@ -114,7 +130,7 @@ export class ContentHierarchyService {
     items: T[],
     startIndex: number = 0
   ): void {
-    items.sort((a, b) => a.order - b.order);
+    // Mevcut dizinin fiziksel sırasını koruyarak order değerlerini güncelle
     items.forEach((item, index) => {
       item.order = startIndex + index;
     });
@@ -186,12 +202,27 @@ export class ContentHierarchyService {
   public addLevelGroup(newGroup: LevelGroupItem): void {
     this.saveStateToUndo();
 
-    // Order değeri belirtilmemişse en sona ekle
-    if (newGroup.order === undefined) {
-      newGroup.order = this.hierarchy.length;
+    // Eğer order belirtilmemişse en sona ekle
+    const targetOrder =
+      newGroup.order === undefined ? this.hierarchy.length : newGroup.order;
+
+    // Doğru index'i bul: mevcut sıralamada order >= targetOrder olan ilk eleman
+    const insertIndex = this.hierarchy.findIndex((g) => g.order >= targetOrder);
+
+    const groupToInsert = {
+      ...newGroup,
+      order: targetOrder,
+      levels: newGroup.levels || [],
+    };
+
+    if (insertIndex === -1) {
+      // Liste sonuna ekle
+      this.hierarchy.push(groupToInsert);
+    } else {
+      this.hierarchy.splice(insertIndex, 0, groupToInsert);
     }
 
-    this.hierarchy.push({ ...newGroup, levels: newGroup.levels || [] });
+    // Order'ları yeniden düzenle
     this.reorderItems(this.hierarchy);
 
     this.addToCommandHistory("addLevelGroup", newGroup);
@@ -235,7 +266,12 @@ export class ContentHierarchyService {
 
     this.saveStateToUndo();
 
-    this.hierarchy[groupIndex].order = newOrder;
+    // Fiziksel taşıma: elemanı çıkar ve yeni index'e ekle
+    const [groupItem] = this.hierarchy.splice(groupIndex, 1);
+    const targetIndex = Math.max(0, Math.min(newOrder, this.hierarchy.length));
+    this.hierarchy.splice(targetIndex, 0, groupItem);
+
+    // Order'ları yeniden düzenle
     this.reorderItems(this.hierarchy);
 
     this.addToCommandHistory("moveLevelGroup", { groupId, newOrder });
@@ -275,12 +311,24 @@ export class ContentHierarchyService {
 
     const group = this.hierarchy[groupIndex];
 
-    // Order değeri belirtilmemişse en sona ekle
-    if (newLevel.order === undefined) {
-      newLevel.order = group.levels.length;
+    const targetOrder =
+      newLevel.order === undefined ? group.levels.length : newLevel.order;
+
+    const insertIndex = group.levels.findIndex((l) => l.order >= targetOrder);
+
+    const levelToInsert = {
+      ...newLevel,
+      order: targetOrder,
+      components: newLevel.components || [],
+    };
+
+    if (insertIndex === -1) {
+      group.levels.push(levelToInsert);
+    } else {
+      group.levels.splice(insertIndex, 0, levelToInsert);
     }
 
-    group.levels.push({ ...newLevel, components: newLevel.components || [] });
+    // Order'ları yeniden düzenle
     this.reorderItems(group.levels);
 
     this.addToCommandHistory("addLevel", { groupId, newLevel });
@@ -334,14 +382,20 @@ export class ContentHierarchyService {
       found.group.levels.splice(found.levelIndex, 1);
       this.reorderItems(found.group.levels);
 
-      // Yeni grup'a ekle
-      level.order = newOrder;
-      this.hierarchy[newGroupIndex].levels.push(level);
+      // Yeni grup'a ekle (targetIndex kullan)
+      const targetIndex = Math.max(
+        0,
+        Math.min(newOrder, this.hierarchy[newGroupIndex].levels.length)
+      );
+      this.hierarchy[newGroupIndex].levels.splice(targetIndex, 0, level);
       this.reorderItems(this.hierarchy[newGroupIndex].levels);
     } else {
-      // Aynı grup içinde taşı
-      level.order = newOrder;
-      this.reorderItems(found.group.levels);
+      // Aynı grup içinde taşı: dizide fiziksel yeniden konumlandır
+      const levels = found.group.levels;
+      const [lvl] = levels.splice(found.levelIndex, 1);
+      const targetIndex = Math.max(0, Math.min(newOrder, levels.length));
+      levels.splice(targetIndex, 0, lvl);
+      this.reorderItems(levels);
     }
 
     this.addToCommandHistory("moveLevel", { levelId, newOrder, newGroupId });
@@ -377,12 +431,23 @@ export class ContentHierarchyService {
 
     const level = found.level;
 
-    // Order değeri belirtilmemişse en sona ekle
-    if (newComponent.order === undefined) {
-      newComponent.order = level.components.length;
+    const targetOrder =
+      newComponent.order === undefined
+        ? level.components.length
+        : newComponent.order;
+
+    const insertIndex = level.components.findIndex(
+      (c) => c.order >= targetOrder
+    );
+
+    const componentToInsert = { ...newComponent, order: targetOrder };
+
+    if (insertIndex === -1) {
+      level.components.push(componentToInsert);
+    } else {
+      level.components.splice(insertIndex, 0, componentToInsert);
     }
 
-    level.components.push({ ...newComponent });
     this.reorderItems(level.components);
 
     this.addToCommandHistory("addComponent", { levelId, newComponent });
@@ -441,13 +506,19 @@ export class ContentHierarchyService {
       this.reorderItems(found.level.components);
 
       // Yeni level'a ekle
-      component.order = newOrder;
-      newLevelFound.level.components.push(component);
+      const targetIndex = Math.max(
+        0,
+        Math.min(newOrder, newLevelFound.level.components.length)
+      );
+      newLevelFound.level.components.splice(targetIndex, 0, component);
       this.reorderItems(newLevelFound.level.components);
     } else {
-      // Aynı level içinde taşı
-      component.order = newOrder;
-      this.reorderItems(found.level.components);
+      // Aynı level içinde taşı: dizide fiziksel yeniden konumlandır
+      const comps = found.level.components;
+      const [comp] = comps.splice(found.componentIndex, 1);
+      const targetIndex = Math.max(0, Math.min(newOrder, comps.length));
+      comps.splice(targetIndex, 0, comp);
+      this.reorderItems(comps);
     }
 
     this.addToCommandHistory("moveComponent", {
@@ -480,16 +551,19 @@ export class ContentHierarchyService {
    * Son işlemi geri alır
    */
   public undo(): void {
-    if (this.undoStack.length === 0) return;
+    if (this.undoStack.length === 0 || this.commandHistory.length === 0) return;
 
     // Mevcut state'i redo stack'e ekle
     this.redoStack.push(this.deepClone(this.hierarchy));
+
+    // Son komut'u redo history'ye taşı
+    const lastCommand = this.commandHistory.pop()!;
+    this.redoCommandHistory.unshift(lastCommand);
 
     // Son state'i geri yükle
     const previousState = this.undoStack.pop()!;
     this.hierarchy = previousState;
 
-    this.addToCommandHistory("undo", {});
     this.notifyListeners();
   }
 
@@ -497,26 +571,50 @@ export class ContentHierarchyService {
    * Geri alınan işlemi tekrar yapar
    */
   public redo(): void {
-    if (this.redoStack.length === 0) return;
+    if (this.redoStack.length === 0 || this.redoCommandHistory.length === 0)
+      return;
 
     // Mevcut state'i undo stack'e ekle
     this.undoStack.push(this.deepClone(this.hierarchy));
+
+    // İlk redo komutunu geri command history'ye taşı
+    const redoCommand = this.redoCommandHistory.shift()!;
+    this.commandHistory.push(redoCommand);
 
     // Redo state'i geri yükle
     const redoState = this.redoStack.pop()!;
     this.hierarchy = redoState;
 
-    this.addToCommandHistory("redo", {});
     this.notifyListeners();
   }
 
   /**
-   * Undo history'yi temizler
+   * Undo history'yi temizler (sadece undo geçmişi)
    */
   public clearUndoHistory(): void {
     this.undoStack = [];
+    this.commandHistory = [];
+    this.notifyListeners();
+  }
+
+  /**
+   * Redo history'yi temizler (sadece redo geçmişi)
+   */
+  public clearRedoHistory(): void {
     this.redoStack = [];
-    this.addToCommandHistory("clearUndoHistory", {});
+    this.redoCommandHistory = [];
+    this.notifyListeners();
+  }
+
+  /**
+   * Tüm undo/redo geçmişini temizler
+   */
+  public clearAllHistory(): void {
+    this.undoStack = [];
+    this.redoStack = [];
+    this.commandHistory = [];
+    this.redoCommandHistory = [];
+    this.notifyListeners();
   }
 
   // ============ EXTENDED UNDO/REDO METHODS ============
@@ -540,14 +638,40 @@ export class ContentHierarchyService {
    */
   public peekUndoHistory(
     limit: number = 10
-  ): Array<{ id: string; label: string; timestamp: number }> {
+  ): Array<{ id: string; label: string; type: string; timestamp: number }> {
     const recentCommands = this.commandHistory
       .slice(-Math.min(limit, this.commandHistory.length))
       .reverse();
 
-    return recentCommands.map((cmd, index) => ({
-      id: `${cmd.timestamp}-${index}`,
+    // Kullanıcıya gösterilmeyecek komut tipleri
+    const hiddenTypes = new Set(["deserialize", "setBaseline"]);
+
+    return recentCommands
+      .filter((cmd) => !hiddenTypes.has(cmd.type))
+      .map((cmd, index) => ({
+        id: `${cmd.timestamp}-${index}`,
+        label: this.formatCommandLabel(cmd),
+        type: cmd.type,
+        timestamp: cmd.timestamp,
+      }));
+  }
+
+  /**
+   * Redo için mevcut komutları döner (redo dropdown listesi için)
+   */
+  public peekRedoHistory(
+    limit: number = 10
+  ): Array<{ id: string; label: string; type: string; timestamp: number }> {
+    const hiddenTypes = new Set(["deserialize", "setBaseline"]);
+
+    const redoCommands = this.redoCommandHistory
+      .slice(0, Math.min(limit, this.redoCommandHistory.length))
+      .filter((cmd) => !hiddenTypes.has(cmd.type));
+
+    return redoCommands.map((cmd, index) => ({
+      id: `redo-${cmd.timestamp}-${index}`,
       label: this.formatCommandLabel(cmd),
+      type: cmd.type,
       timestamp: cmd.timestamp,
     }));
   }
@@ -590,12 +714,29 @@ export class ContentHierarchyService {
    * Çoklu geri al - tek seferde birden fazla adım geri alır
    */
   public undoSteps(count: number): void {
-    if (count <= 0 || this.undoStack.length === 0) return;
+    if (
+      count <= 0 ||
+      this.undoStack.length === 0 ||
+      this.commandHistory.length === 0
+    )
+      return;
 
-    const actualSteps = Math.min(count, this.undoStack.length);
+    const actualSteps = Math.min(
+      count,
+      this.undoStack.length,
+      this.commandHistory.length
+    );
 
     // Mevcut state'i redo stack'e ekle
     this.redoStack.push(this.deepClone(this.hierarchy));
+
+    // Komutları redo history'ye taşı
+    for (let i = 0; i < actualSteps; i++) {
+      if (this.commandHistory.length > 0) {
+        const command = this.commandHistory.pop()!;
+        this.redoCommandHistory.unshift(command);
+      }
+    }
 
     // Belirtilen sayıda adım geri al
     for (let i = 0; i < actualSteps; i++) {
@@ -611,7 +752,51 @@ export class ContentHierarchyService {
       }
     }
 
-    this.addToCommandHistory("undoSteps", { count: actualSteps });
+    this.notifyListeners();
+  }
+
+  /**
+   * Çoklu ileri al - tek seferde birden fazla adım ileri alır
+   */
+  public redoSteps(count: number): void {
+    if (
+      count <= 0 ||
+      this.redoStack.length === 0 ||
+      this.redoCommandHistory.length === 0
+    )
+      return;
+
+    const actualSteps = Math.min(
+      count,
+      this.redoStack.length,
+      this.redoCommandHistory.length
+    );
+
+    // Mevcut state'i undo stack'e ekle
+    this.undoStack.push(this.deepClone(this.hierarchy));
+
+    // Komutları command history'ye geri taşı
+    for (let i = 0; i < actualSteps; i++) {
+      if (this.redoCommandHistory.length > 0) {
+        const command = this.redoCommandHistory.shift()!;
+        this.commandHistory.push(command);
+      }
+    }
+
+    // Belirtilen sayıda adım ileri al
+    for (let i = 0; i < actualSteps; i++) {
+      if (this.redoStack.length > 0) {
+        const nextState = this.redoStack.pop()!;
+        if (i === actualSteps - 1) {
+          // Son adımda hierarchy'yi güncelle
+          this.hierarchy = nextState;
+        } else {
+          // Ara adımları undo stack'e ekle
+          this.undoStack.push(nextState);
+        }
+      }
+    }
+
     this.notifyListeners();
   }
 
@@ -620,11 +805,18 @@ export class ContentHierarchyService {
   /**
    * Baseline hierarchy'yi ayarlar (diff için referans)
    */
-  public setBaseline(baseline?: LevelHierarchy): void {
+  public setBaseline(
+    baseline?: LevelHierarchy,
+    recordHistory: boolean = false
+  ): void {
     this.baselineHierarchy = baseline
       ? this.deepClone(baseline)
       : this.deepClone(this.hierarchy);
-    this.addToCommandHistory("setBaseline", { timestamp: Date.now() });
+
+    // İstenmiyorsa command history'ye ekleme
+    if (recordHistory) {
+      this.addToCommandHistory("setBaseline", { timestamp: Date.now() });
+    }
   }
 
   /**
@@ -924,19 +1116,28 @@ export class ContentHierarchyService {
   /**
    * JSON string'den hierarchy yükler
    */
-  public deserialize(json: string): void {
+  public deserialize(json: string, recordHistory: boolean = false): void {
     try {
       const data = JSON.parse(json);
 
       if (data.hierarchy && Array.isArray(data.hierarchy)) {
-        this.saveStateToUndo();
+        // İlk yükleme anında undo/redo'ya ekleme
+        if (recordHistory) {
+          this.saveStateToUndo();
+        }
+
         this.hierarchy = data.hierarchy;
 
         if (data.commandHistory && Array.isArray(data.commandHistory)) {
           this.commandHistory = data.commandHistory;
         }
 
-        this.addToCommandHistory("deserialize", { timestamp: data.timestamp });
+        if (recordHistory) {
+          this.addToCommandHistory("deserialize", {
+            timestamp: data.timestamp,
+          });
+        }
+
         this.notifyListeners();
       }
     } catch (error) {

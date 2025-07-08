@@ -7,15 +7,39 @@ interface ComponentPreviewCardProps {
   component: ComponentItem;
   className?: string;
   onEdit?: (component: ComponentItem) => void;
+  addedIds?: Set<string>;
+  updatedIds?: Set<string>;
 }
 
 const ComponentPreviewCard: React.FC<ComponentPreviewCardProps> = ({
   component,
   className = "",
   onEdit,
+  addedIds = new Set(),
+  updatedIds = new Set(),
 }) => {
   return (
-    <div className={`component-preview-card ${className} flex-shrink-0`}>
+    <div
+      className={`component-preview-card ${className} flex-shrink-0 relative`}
+    >
+      {/* Visual diff indicators - Plan.md 4.2 specs */}
+      {addedIds.has(component.id) && (
+        <div
+          className="absolute top-2 right-2 z-20 w-2 h-2 bg-green-500 rounded-full border border-white shadow-sm"
+          title="Yeni eklendi"
+          role="img"
+          aria-label="Yeni eklenen bileşen"
+        />
+      )}
+      {!addedIds.has(component.id) && updatedIds.has(component.id) && (
+        <div
+          className="absolute top-2 right-2 z-20 w-2 h-2 bg-yellow-500 rounded-full border border-white shadow-sm"
+          title="Güncellendi"
+          role="img"
+          aria-label="Güncellenen bileşen"
+        />
+      )}
+
       <div className="w-[280px] bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {/* Component Header - Integrated with MobileScreen */}
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200">

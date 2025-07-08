@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { LevelItem, ComponentItem } from "@/types/LevelHierarchy";
 import ComponentPreviewCard from "./ComponentPreviewCard";
@@ -5,6 +7,27 @@ import AddComponentButton from "../button/AddComponentButton";
 import ComponentEditDrawer from "../edit/ComponentEditDrawer";
 import { LearningService } from "@/services/learning-service";
 import { Database } from "@/types/supabase";
+import { v4 as uuidv4 } from "uuid";
+import { ContentHierarchyService } from "@/services/ContentHierarchyService";
+
+// Drag & Drop imports
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type ComponentType = Database["public"]["Tables"]["component_types"]["Row"];
 
@@ -13,17 +36,90 @@ interface LevelDropdownProps {
   isOpen?: boolean;
   onToggle?: () => void;
   className?: string;
+  addedIds?: Set<string>;
+  updatedIds?: Set<string>;
 }
+
+// Sortable Component Wrapper
+interface SortableComponentProps {
+  component: ComponentItem;
+  onEdit: (component: ComponentItem) => void;
+  addedIds: Set<string>;
+  updatedIds: Set<string>;
+}
+
+const SortableComponent: React.FC<SortableComponentProps> = ({
+  component,
+  onEdit,
+  addedIds,
+  updatedIds,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: component.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex-shrink-0">
+      <div className="relative">
+        {/* Drag Handle - üst kısımda */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-black/20 to-transparent hover:from-black/30 cursor-grab active:cursor-grabbing rounded-t-xl z-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+          title="Sürüklemek için tutun"
+        >
+          <svg
+            className="w-4 h-4 text-white"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+          </svg>
+          <svg
+            className="w-4 h-4 text-white ml-1"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+          </svg>
+        </div>
+
+        <ComponentPreviewCard
+          component={component}
+          className="flex-shrink-0"
+          onEdit={onEdit}
+          addedIds={addedIds}
+          updatedIds={updatedIds}
+        />
+      </div>
+    </div>
+  );
+};
 
 const LevelDropdown: React.FC<LevelDropdownProps> = ({
   level,
   isOpen = false,
   onToggle,
   className = "",
+  addedIds = new Set(),
+  updatedIds = new Set(),
 }) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const [componentTypes, setComponentTypes] = useState<ComponentType[]>([]);
   const [isLoadingTypes, setIsLoadingTypes] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [editDrawerState, setEditDrawerState] = useState<{
     isOpen: boolean;
     component: ComponentItem | null;
@@ -36,8 +132,19 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
     order: 0,
   });
 
+  const hierarchyService = ContentHierarchyService.getInstance();
+
   const isDropdownOpen = onToggle ? isOpen : internalOpen;
   const handleToggle = onToggle || (() => setInternalOpen(!internalOpen));
+
+  // Drag & drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3, // 3px hareket ettikten sonra aktifleşir
+      },
+    })
+  );
 
   // Component types'ları yükle
   useEffect(() => {
@@ -64,6 +171,34 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
   const sortedComponents = [...level.components].sort(
     (a, b) => a.order - b.order
   );
+
+  // Drag handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (active.id !== over?.id) {
+      const oldIndex = sortedComponents.findIndex(
+        (item) => item.id === active.id
+      );
+      const newIndex = sortedComponents.findIndex(
+        (item) => item.id === over?.id
+      );
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        // Service'e yeni index'i bildir
+        hierarchyService.moveComponent(
+          active.id as string,
+          newIndex,
+          level.id // Aynı level içinde taşıma
+        );
+      }
+    }
+  };
 
   // Handle component edit
   const handleComponentEdit = (component: ComponentItem) => {
@@ -94,18 +229,19 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
   };
 
   // Handle new component creation
-  const handleAddComponent = (componentType: ComponentType) => {
-    const nextOrder =
-      sortedComponents.length > 0
-        ? Math.max(...sortedComponents.map((c) => c.order)) + 1
-        : 0;
+  const handleAddComponent = (
+    componentType: ComponentType,
+    targetOrder: number
+  ) => {
+    const newComponent: ComponentItem = {
+      id: uuidv4(),
+      type: componentType.type_key,
+      display_name: componentType.display_name,
+      content: componentType.content_template || {},
+      order: targetOrder,
+    };
 
-    setEditDrawerState({
-      isOpen: true,
-      component: null, // null means creating new component
-      componentType,
-      order: nextOrder,
-    });
+    hierarchyService.addComponent(level.id, newComponent);
   };
 
   const renderIcon = () => {
@@ -121,6 +257,11 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
     }
     return <span className="text-lg mr-2">📋</span>;
   };
+
+  // Aktif sürüklenen component'i bul
+  const activeComponent = sortedComponents.find(
+    (component) => component.id === activeId
+  );
 
   return (
     <div className={`level-dropdown ${className}`}>
@@ -172,41 +313,72 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
           {sortedComponents.length > 0 ? (
             <div className="components-container">
               <h4 className="text-sm font-medium text-gray-700 mb-3">
-                Bileşenler ({sortedComponents.length})
+                Bileşenler ({sortedComponents.length}) - Sürükleyerek sıralayın
               </h4>
-              <div
-                className="flex items-center space-x-6 overflow-x-auto pb-4 pt-2 scrollbar-thin 
-                           scrollbar-thumb-gray-300 scrollbar-track-gray-100 min-h-[450px]"
-                style={{ scrollbarWidth: "thin" }}
+
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
               >
-                {sortedComponents.map((component, index) => (
-                  <React.Fragment key={component.id}>
-                    {/* Component öncesi hover alanı */}
-                    <div className="group relative flex items-center h-full">
-                      <AddComponentButton
-                        componentTypes={componentTypes}
-                        onComponentTypeSelect={handleAddComponent}
+                <div
+                  className="flex items-center space-x-6 overflow-x-auto pb-4 pt-2 scrollbar-thin 
+                             scrollbar-thumb-gray-300 scrollbar-track-gray-100 min-h-[450px]"
+                  style={{ scrollbarWidth: "thin" }}
+                >
+                  <SortableContext
+                    items={sortedComponents.map((c) => c.id)}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    {sortedComponents.map((component, index) => (
+                      <React.Fragment key={component.id}>
+                        {/* Component öncesi hover alanı */}
+                        <div className="group relative flex items-center h-full">
+                          <AddComponentButton
+                            componentTypes={componentTypes}
+                            order={component.order}
+                            onComponentTypeSelect={handleAddComponent}
+                          />
+                        </div>
+
+                        {/* Sortable Component */}
+                        <SortableComponent
+                          component={component}
+                          onEdit={handleComponentEdit}
+                          addedIds={addedIds}
+                          updatedIds={updatedIds}
+                        />
+
+                        {/* Son component değilse sonrası hover alanı */}
+                        {index === sortedComponents.length - 1 && (
+                          <div className="group relative flex items-center h-full">
+                            <AddComponentButton
+                              componentTypes={componentTypes}
+                              order={component.order + 1}
+                              onComponentTypeSelect={handleAddComponent}
+                            />
+                          </div>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </SortableContext>
+                </div>
+
+                {/* Drag Overlay */}
+                <DragOverlay>
+                  {activeComponent ? (
+                    <div className="rotate-2 scale-105">
+                      <ComponentPreviewCard
+                        component={activeComponent}
+                        className="shadow-xl border-2 border-blue-300"
+                        addedIds={addedIds}
+                        updatedIds={updatedIds}
                       />
                     </div>
-
-                    <ComponentPreviewCard
-                      component={component}
-                      className="flex-shrink-0"
-                      onEdit={handleComponentEdit}
-                    />
-
-                    {/* Son component değilse sonrası hover alanı */}
-                    {index === sortedComponents.length - 1 && (
-                      <div className="group relative flex items-center h-full">
-                        <AddComponentButton
-                          componentTypes={componentTypes}
-                          onComponentTypeSelect={handleAddComponent}
-                        />
-                      </div>
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500 min-h-[300px] flex flex-col items-center justify-center">
@@ -216,6 +388,7 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
               <div className="group relative mt-8 flex items-center justify-center h-[100px] w-full">
                 <AddComponentButton
                   componentTypes={componentTypes}
+                  order={0}
                   onComponentTypeSelect={handleAddComponent}
                 />
               </div>

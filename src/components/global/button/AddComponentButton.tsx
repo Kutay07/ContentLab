@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useRef, useState } from "react";
 import ComponentTypeMenu from "./ComponentTypeMenu";
 import { Database } from "@/types/supabase";
@@ -7,16 +9,19 @@ interface AddComponentButtonProps {
   onAdd?: () => void;
   className?: string;
   componentTypes?: ComponentType[];
-  onComponentTypeSelect?: (componentType: ComponentType) => void;
+  order: number;
+  onComponentTypeSelect?: (componentType: ComponentType, order: number) => void;
 }
 
 const AddComponentButton: React.FC<AddComponentButtonProps> = ({
   onAdd,
   className = "",
   componentTypes = [],
+  order,
   onComponentTypeSelect,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // order prop yalnızca yeni bileşen eklerken parent callback'e iletilir.
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleButtonClick = () => {
@@ -32,7 +37,7 @@ const AddComponentButton: React.FC<AddComponentButtonProps> = ({
   };
 
   const handleComponentTypeSelect = (componentType: ComponentType) => {
-    onComponentTypeSelect?.(componentType);
+    onComponentTypeSelect?.(componentType, order);
     setIsMenuOpen(false);
   };
 
