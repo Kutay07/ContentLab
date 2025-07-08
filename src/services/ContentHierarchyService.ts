@@ -4,6 +4,7 @@ import {
   LevelItem,
   ComponentItem,
 } from "../types/LevelHierarchy";
+import { generateId } from "../utils/generateId";
 
 /**
  * Command interface for undo/redo functionality
@@ -200,6 +201,10 @@ export class ContentHierarchyService {
    * Yeni level group ekler
    */
   public addLevelGroup(newGroup: LevelGroupItem): void {
+    if (!newGroup.id) {
+      // ID eksikse client side benzersiz ID ata
+      (newGroup as any).id = generateId();
+    }
     this.saveStateToUndo();
 
     // Eğer order belirtilmemişse en sona ekle
@@ -302,6 +307,9 @@ export class ContentHierarchyService {
    * Belirtilen group'a yeni level ekler
    */
   public addLevel(groupId: string, newLevel: LevelItem): void {
+    if (!newLevel.id) {
+      (newLevel as any).id = generateId();
+    }
     const groupIndex = this.hierarchy.findIndex(
       (group) => group.id === groupId
     );
@@ -424,6 +432,9 @@ export class ContentHierarchyService {
    * Belirtilen level'a yeni component ekler
    */
   public addComponent(levelId: string, newComponent: ComponentItem): void {
+    if (!newComponent.id) {
+      (newComponent as any).id = generateId();
+    }
     const found = this.findLevelById(levelId);
     if (!found) return;
 
@@ -872,6 +883,195 @@ export class ContentHierarchyService {
   }
 
   /**
+   * İki nesne arasındaki değişen alanları bulur (sadece belirtilen anahtarlar)
+   */
+  private getChangedFields<T extends Record<string, any>>(
+    before: T,
+    after: T,
+    keys: (keyof T)[]
+  ): Partial<T> {
+    const changed: Partial<T> = {};
+    keys.forEach((key) => {
+      if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+        changed[key] = after[key];
+      }
+    });
+    return changed;
+  }
+
+  /**
+   * Baseline ile mevcut hierarchy arasındaki ayrıntılı farkları döndürür
+   */
+  public diffWithBaselineDetailed(baseline?: LevelHierarchy): {
+    added: {
+      groups: LevelGroupItem[];
+      levels: LevelItem[];
+      components: ComponentItem[];
+    };
+    updated: {
+      groups: {
+        before: LevelGroupItem;
+        after: LevelGroupItem;
+        changedFields: Partial<LevelGroupItem>;
+      }[];
+      levels: {
+        before: LevelItem;
+        after: LevelItem;
+        changedFields: Partial<LevelItem>;
+      }[];
+      components: {
+        before: ComponentItem;
+        after: ComponentItem;
+        changedFields: Partial<ComponentItem>;
+      }[];
+    };
+    deleted: {
+      groups: LevelGroupItem[];
+      levels: LevelItem[];
+      components: ComponentItem[];
+    };
+  } {
+    const referenceBaseline = baseline || this.baselineHierarchy;
+
+    const added = {
+      groups: [] as LevelGroupItem[],
+      levels: [] as LevelItem[],
+      components: [] as ComponentItem[],
+    };
+    const deleted = {
+      groups: [] as LevelGroupItem[],
+      levels: [] as LevelItem[],
+      components: [] as ComponentItem[],
+    };
+    const updated = {
+      groups: [] as {
+        before: LevelGroupItem;
+        after: LevelGroupItem;
+        changedFields: Partial<LevelGroupItem>;
+      }[],
+      levels: [] as {
+        before: LevelItem;
+        after: LevelItem;
+        changedFields: Partial<LevelItem>;
+      }[],
+      components: [] as {
+        before: ComponentItem;
+        after: ComponentItem;
+        changedFields: Partial<ComponentItem>;
+      }[],
+    };
+
+    // --- Baseline haritaları oluştur ---
+    const baselineGroupMap = new Map<string, LevelGroupItem>();
+    const baselineLevelMap = new Map<string, LevelItem>();
+    const baselineComponentMap = new Map<string, ComponentItem>();
+
+    referenceBaseline.forEach((g) => {
+      baselineGroupMap.set(g.id, g);
+      g.levels.forEach((l) => {
+        baselineLevelMap.set(l.id, l);
+        l.components.forEach((c) => baselineComponentMap.set(c.id, c));
+      });
+    });
+
+    // --- Draft (current) haritaları ---
+    const currentGroupMap = new Map<string, LevelGroupItem>();
+    const currentLevelMap = new Map<string, LevelItem>();
+    const currentComponentMap = new Map<string, ComponentItem>();
+
+    this.hierarchy.forEach((g) => {
+      currentGroupMap.set(g.id, g);
+      g.levels.forEach((l) => {
+        currentLevelMap.set(l.id, l);
+        l.components.forEach((c) => currentComponentMap.set(c.id, c));
+      });
+    });
+
+    // --- Added & Updated ---
+    this.hierarchy.forEach((group) => {
+      const baseGroup = baselineGroupMap.get(group.id);
+      if (!baseGroup) {
+        added.groups.push(this.deepClone(group));
+      } else {
+        const changedFields = this.getChangedFields(baseGroup, group, [
+          "title",
+          "order",
+        ]);
+        if (Object.keys(changedFields).length > 0) {
+          updated.groups.push({
+            before: this.deepClone(baseGroup),
+            after: this.deepClone(group),
+            changedFields,
+          });
+        }
+      }
+
+      // levels
+      group.levels.forEach((level) => {
+        const baseLevel = baselineLevelMap.get(level.id);
+        if (!baseLevel) {
+          added.levels.push(this.deepClone(level));
+        } else {
+          const changedFields = this.getChangedFields(baseLevel, level, [
+            "title",
+            "icon_key",
+            "icon_family",
+            "xp_reward",
+            "order",
+          ]);
+          if (Object.keys(changedFields).length > 0) {
+            updated.levels.push({
+              before: this.deepClone(baseLevel),
+              after: this.deepClone(level),
+              changedFields,
+            });
+          }
+        }
+
+        // components
+        level.components.forEach((component) => {
+          const baseComponent = baselineComponentMap.get(component.id);
+          if (!baseComponent) {
+            added.components.push(this.deepClone(component));
+          } else {
+            const changedFields = this.getChangedFields(
+              baseComponent,
+              component,
+              ["type", "display_name", "content", "order"]
+            );
+            if (Object.keys(changedFields).length > 0) {
+              updated.components.push({
+                before: this.deepClone(baseComponent),
+                after: this.deepClone(component),
+                changedFields,
+              });
+            }
+          }
+        });
+      });
+    });
+
+    // --- Deleted ---
+    referenceBaseline.forEach((g) => {
+      if (!currentGroupMap.has(g.id)) {
+        deleted.groups.push(this.deepClone(g));
+      }
+      g.levels.forEach((l) => {
+        if (!currentLevelMap.has(l.id)) {
+          deleted.levels.push(this.deepClone(l));
+        }
+        l.components.forEach((c) => {
+          if (!currentComponentMap.has(c.id)) {
+            deleted.components.push(this.deepClone(c));
+          }
+        });
+      });
+    });
+
+    return { added, updated, deleted };
+  }
+
+  /**
    * Hierarchy'den tüm ID'leri çıkarır
    */
   private extractAllIds(hierarchy: LevelHierarchy): {
@@ -1201,6 +1401,76 @@ export class ContentHierarchyService {
     } catch (error) {
       return false;
     }
+  }
+
+  /**
+   * Geçerliliği kontrol eder ve hata listesini döner
+   */
+  public validateHierarchyDetailed(): {
+    isValid: boolean;
+    errors: string[];
+  } {
+    const errors: string[] = [];
+    try {
+      if (!Array.isArray(this.hierarchy)) {
+        errors.push("Hierarchy dizisi geçersiz.");
+        return { isValid: false, errors };
+      }
+
+      const groupIds = new Set<string>();
+      const levelIds = new Set<string>();
+      const componentIds = new Set<string>();
+
+      this.hierarchy.forEach((group, gIndex) => {
+        if (!group.id) errors.push(`Group[${gIndex}] id boş.`);
+        if (!group.title) errors.push(`Group[${gIndex}] title boş.`);
+        if (typeof group.order !== "number")
+          errors.push(`Group[${gIndex}] order sayısal değil.`);
+        if (groupIds.has(group.id))
+          errors.push(`Group id tekrarlı: ${group.id}`);
+        groupIds.add(group.id);
+
+        if (!Array.isArray(group.levels))
+          errors.push(`Group[${gIndex}] levels dizi değil.`);
+
+        group.levels.forEach((level, lIndex) => {
+          if (!level.id) errors.push(`Level[${gIndex}.${lIndex}] id boş.`);
+          if (!level.title)
+            errors.push(`Level[${gIndex}.${lIndex}] title boş.`);
+          if (typeof level.order !== "number")
+            errors.push(`Level[${gIndex}.${lIndex}] order sayısal değil.`);
+          if (typeof level.xp_reward !== "number")
+            errors.push(`Level[${gIndex}.${lIndex}] xp_reward sayısal değil.`);
+          if (levelIds.has(level.id))
+            errors.push(`Level id tekrarlı: ${level.id}`);
+          levelIds.add(level.id);
+
+          if (!Array.isArray(level.components))
+            errors.push(`Level[${gIndex}.${lIndex}] components dizi değil.`);
+
+          level.components.forEach((comp, cIndex) => {
+            if (!comp.id)
+              errors.push(`Component[${gIndex}.${lIndex}.${cIndex}] id boş.`);
+            if (!comp.type)
+              errors.push(`Component[${gIndex}.${lIndex}.${cIndex}] type boş.`);
+            if (!comp.display_name)
+              errors.push(
+                `Component[${gIndex}.${lIndex}.${cIndex}] display_name boş.`
+              );
+            if (typeof comp.order !== "number")
+              errors.push(
+                `Component[${gIndex}.${lIndex}.${cIndex}] order sayısal değil.`
+              );
+            if (componentIds.has(comp.id))
+              errors.push(`Component id tekrarlı: ${comp.id}`);
+            componentIds.add(comp.id);
+          });
+        });
+      });
+    } catch (e) {
+      errors.push("Bilinmeyen doğrulama hatası");
+    }
+    return { isValid: errors.length === 0, errors };
   }
 
   /**

@@ -7,6 +7,7 @@ interface ComponentPreviewCardProps {
   component: ComponentItem;
   className?: string;
   onEdit?: (component: ComponentItem) => void;
+  onDelete?: (component: ComponentItem) => void;
   addedIds?: Set<string>;
   updatedIds?: Set<string>;
 }
@@ -15,6 +16,7 @@ const ComponentPreviewCard: React.FC<ComponentPreviewCardProps> = ({
   component,
   className = "",
   onEdit,
+  onDelete,
   addedIds = new Set(),
   updatedIds = new Set(),
 }) => {
@@ -84,28 +86,52 @@ const ComponentPreviewCard: React.FC<ComponentPreviewCardProps> = ({
             <div className="text-xs text-gray-400">
               ID: {component.id.substring(0, 8)}...
             </div>
-            {onEdit && (
-              <button
-                onClick={() => onEdit(component)}
-                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                title="Bileşeni düzenle"
-              >
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            <div className="flex items-center space-x-2">
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(component)}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                  title="Bileşeni düzenle"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-                Düzenle
-              </button>
-            )}
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  Düzenle
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(component)}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                  title="Bileşeni sil"
+                >
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                  Sil
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

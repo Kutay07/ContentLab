@@ -128,6 +128,12 @@ const LevelGroupDropdown: React.FC<LevelGroupDropdownProps> = ({
 
   const hierarchyService = ContentHierarchyService.getInstance();
 
+  const handleGroupDelete = () => {
+    if (window.confirm("Bu seviye grubunu silmek istediğinize emin misiniz?")) {
+      hierarchyService.deleteLevelGroup(levelGroup.id);
+    }
+  };
+
   // Drag & drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -205,7 +211,33 @@ const LevelGroupDropdown: React.FC<LevelGroupDropdownProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center">
+        <div className="flex items-center space-x-2">
+          {/* Delete group */}
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleGroupDelete();
+            }}
+            className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
+            title="Seviye Grubunu Sil"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </span>
+
           <span className="text-sm text-purple-700 mr-3 font-medium">
             {isDropdownOpen ? "Daralt" : "Genişlet"}
           </span>

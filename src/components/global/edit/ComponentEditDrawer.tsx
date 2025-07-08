@@ -7,7 +7,7 @@ import { ContentHierarchyService } from "@/services/ContentHierarchyService";
 import MobileScreenContainer from "../preview/MobileScreenContainer";
 import MobileScreen from "../preview/MobileScreen";
 import ComponentEditTabs from "./ComponentEditTabs";
-import { v4 as uuidv4 } from "uuid";
+import { generateId } from "@/utils/generateId";
 
 type ComponentType = Database["public"]["Tables"]["component_types"]["Row"];
 
@@ -63,7 +63,7 @@ const ComponentEditDrawer: React.FC<ComponentEditDrawerProps> = ({
       } else {
         // New component creation
         const newComponent: ComponentItem = {
-          id: uuidv4(),
+          id: generateId(),
           type: componentType.type_key,
           display_name: componentType.display_name,
           content: contentJson,

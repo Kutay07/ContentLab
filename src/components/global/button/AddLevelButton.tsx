@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { generateId } from "@/utils/generateId";
 import AddLevelModal from "./AddLevelModal";
 import { useHierarchy } from "../context/HierarchyProvider";
 
@@ -29,7 +29,7 @@ const AddLevelButton: React.FC<AddLevelButtonProps> = ({
     try {
       // Plan.md 11.2.3 Service çağrısı specifications
       service.addLevel(groupId, {
-        id: uuidv4(),
+        id: generateId(),
         title: title.trim(),
         order,
         icon_key: null,

@@ -7,8 +7,8 @@ import AddComponentButton from "../button/AddComponentButton";
 import ComponentEditDrawer from "../edit/ComponentEditDrawer";
 import { LearningService } from "@/services/learning-service";
 import { Database } from "@/types/supabase";
-import { v4 as uuidv4 } from "uuid";
 import { ContentHierarchyService } from "@/services/ContentHierarchyService";
+import { generateId } from "@/utils/generateId";
 
 // Drag & Drop imports
 import {
@@ -44,6 +44,7 @@ interface LevelDropdownProps {
 interface SortableComponentProps {
   component: ComponentItem;
   onEdit: (component: ComponentItem) => void;
+  onDelete: (component: ComponentItem) => void;
   addedIds: Set<string>;
   updatedIds: Set<string>;
 }
@@ -51,6 +52,7 @@ interface SortableComponentProps {
 const SortableComponent: React.FC<SortableComponentProps> = ({
   component,
   onEdit,
+  onDelete,
   addedIds,
   updatedIds,
 }) => {
@@ -100,6 +102,7 @@ const SortableComponent: React.FC<SortableComponentProps> = ({
           component={component}
           className="flex-shrink-0"
           onEdit={onEdit}
+          onDelete={onDelete}
           addedIds={addedIds}
           updatedIds={updatedIds}
         />
@@ -136,6 +139,16 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
 
   const isDropdownOpen = onToggle ? isOpen : internalOpen;
   const handleToggle = onToggle || (() => setInternalOpen(!internalOpen));
+
+  const handleLevelDelete = () => {
+    if (
+      window.confirm(
+        "Bu seviyeyi kalıcı olarak silmek istediğinize emin misiniz?"
+      )
+    ) {
+      hierarchyService.deleteLevel(level.id);
+    }
+  };
 
   // Drag & drop sensors
   const sensors = useSensors(
@@ -218,6 +231,12 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
     }
   };
 
+  const handleComponentDelete = (component: ComponentItem) => {
+    if (window.confirm("Bileşeni silmek istediğinize emin misiniz?")) {
+      hierarchyService.deleteComponent(component.id);
+    }
+  };
+
   // Handle drawer close
   const handleDrawerClose = () => {
     setEditDrawerState({
@@ -234,7 +253,7 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
     targetOrder: number
   ) => {
     const newComponent: ComponentItem = {
-      id: uuidv4(),
+      id: generateId(),
       type: componentType.type_key,
       display_name: componentType.display_name,
       content: componentType.content_template || {},
@@ -285,7 +304,35 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center">
+        <div className="flex items-center space-x-2">
+          {/* Delete level button */}
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLevelDelete();
+            }}
+            className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
+            title="Seviyeyi Sil"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </span>
+
+          {/* existing toggle */}
+
           <span className="text-sm text-blue-600 mr-2">
             {isDropdownOpen ? "Kapat" : "Aç"}
           </span>
@@ -346,6 +393,7 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
                         <SortableComponent
                           component={component}
                           onEdit={handleComponentEdit}
+                          onDelete={handleComponentDelete}
                           addedIds={addedIds}
                           updatedIds={updatedIds}
                         />

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import UndoRedoControls from "./UndoRedoControls";
 import DraftControls from "./DraftControls";
+import PublishButton from "./PublishButton";
 
 interface ControlBarProps {
   className?: string;
@@ -30,9 +31,10 @@ export default function ControlBar({ className = "" }: ControlBarProps) {
             <UndoRedoControls />
           </div>
 
-          {/* Sağ taraf - Draft Kontrolleri */}
-          <div className="flex items-center">
+          {/* Sağ taraf - Draft + Publish Kontrolleri */}
+          <div className="flex items-center space-x-4">
             <DraftControls onToast={showToastMessage} />
+            <PublishButton onToast={showToastMessage} />
           </div>
         </div>
       </div>
