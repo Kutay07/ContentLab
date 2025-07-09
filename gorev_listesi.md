@@ -58,7 +58,9 @@ Bu dosya, projenin yapılacaklar listesini ve ilerleme durumunu takip etmek içi
 - [ ] `pages/api/apps/index.ts` API route’u:
   - [ ] **GET** → tüm uygulama JSON’larını dizi olarak döndür.
   - [ ] **POST** → body’den gelen AppConfig’i `{id}.json` olarak kaydet.
+- [ ] `pages/api/apps/index.ts` içinde **Zod** ile AppConfig şema validasyonu ekle, geçersiz veri için `400` döndür.
 - [ ] UI tarafında App listesini API route üzerinden fetch edecek hale getir (`useSWR` veya fetch + Zustand).
+- [ ] Uygulama listesini doğrudan `import { APPS_CONFIG }` yapan tüm dosyalarda yeni fetch tabanlı mekanizmaya geçir.
 
 ### Faz 2 – Çoklu Supabase Bağlantı Yönetimi
 
@@ -70,6 +72,7 @@ Bu dosya, projenin yapılacaklar listesini ve ilerleme durumunu takip etmek içi
   - [ ] `{ [appId]: { connected: boolean; error?: string } }` durum yapısı.
   - [ ] persist middleware ile localStorage’a yaz.
 - [ ] `connect()` / `disconnect()` işlemlerinde `logs/connection-events.json`’a append eden fetch çağrısı ekle.
+- [ ] `supabaseManager.rehydrate(silent?: boolean)` parametresi ekle; `silent=true` iken tablo testi atlanarak hızlı yeniden bağlantı sağlanır.
 
 ### Faz 3 – Servis ve UI Güncellemeleri
 
@@ -79,6 +82,8 @@ Bu dosya, projenin yapılacaklar listesini ve ilerleme durumunu takip etmek içi
   - [ ] “Bağlan / Bağlantıyı Kes” toggle butonu ekle.
   - [ ] Bağlıysa “Yönet” butonu aktif; değilse devre dışı.
 - [ ] Navigasyon guard: `/app/[id]` sayfası açılırken ilgili app’e bağlı olunup olunmadığını kontrol et.
+- [ ] Bağlı değilse `/app/[id]` sayfasında “Önce bağlan” uyarısı göster ve ana sayfaya yönlendirme linki ekle.
+- [ ] UI: AppCard’da bağlı durum için yeşil ikon/rozet, bağlı değilse gri ikon/rozet + tooltip.
 
 ### Faz 4 – Statik Auth & Oturum Yönetimi
 
@@ -99,6 +104,7 @@ Bu dosya, projenin yapılacaklar listesini ve ilerleme durumunu takip etmek içi
 - [ ] Jest veya Playwright ile temel bağlantı akış testi ekle.
 - [ ] Kod genelinde türkçe JSDoc açıklamaları.
 - [ ] `supabase gen types typescript` çıktısını `src/types/supabase.ts` dosyasıyla güncelle.
+- [ ] `pages/api/apps` ve `pages/api/log-connection` rotaları için dosya okuma/yazma unit testleri (`memfs`).
 
 ---
 
