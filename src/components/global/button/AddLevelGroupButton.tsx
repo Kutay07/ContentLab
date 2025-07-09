@@ -4,6 +4,9 @@ import React, { useState } from "react";
 import { generateId } from "@/utils/generateId";
 import AddLevelGroupModal from "./AddLevelGroupModal";
 import { useHierarchy } from "../context/HierarchyProvider";
+import { useAppContext } from "@/contexts/AppContext";
+import { useAuth } from "@/hooks/useAuth";
+import { logEvent } from "@/utils/logger";
 
 interface AddLevelGroupButtonProps {
   onAdd?: (title: string) => void; // Keep for backward compatibility
@@ -17,6 +20,8 @@ const AddLevelGroupButton: React.FC<AddLevelGroupButtonProps> = ({
   order,
 }) => {
   const { service } = useHierarchy();
+  const { appId } = useAppContext();
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleButtonClick = () => {
@@ -37,6 +42,14 @@ const AddLevelGroupButton: React.FC<AddLevelGroupButtonProps> = ({
       onAdd?.(title);
 
       console.log("Seviye Grubu Başarıyla Eklendi:", { title, order });
+
+      logEvent({
+        timestamp: Date.now(),
+        appId,
+        user: user?.username,
+        event: "content_add",
+        meta: { type: "level_group", title },
+      });
     } catch (error) {
       console.error("Seviye grubu eklenirken hata:", error);
     }

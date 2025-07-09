@@ -6,8 +6,11 @@ import ComponentPreviewCard from "./ComponentPreviewCard";
 import AddComponentButton from "../button/AddComponentButton";
 import ComponentEditDrawer from "../edit/ComponentEditDrawer";
 import { LearningService } from "@/services/learning-service";
+import { useAppContext } from "@/contexts/AppContext";
 import { Database } from "@/types/supabase";
-import { ContentHierarchyService } from "@/services/ContentHierarchyService";
+import { useHierarchy } from "../context/HierarchyProvider";
+import { logEvent } from "@/utils/logger";
+import { useAuth } from "@/hooks/useAuth";
 import { generateId } from "@/utils/generateId";
 
 // Drag & Drop imports
@@ -135,7 +138,9 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
     order: 0,
   });
 
-  const hierarchyService = ContentHierarchyService.getInstance();
+  const { service: hierarchyService } = useHierarchy();
+  const { appId } = useAppContext();
+  const { user } = useAuth();
 
   const isDropdownOpen = onToggle ? isOpen : internalOpen;
   const handleToggle = onToggle || (() => setInternalOpen(!internalOpen));
@@ -147,6 +152,14 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
       )
     ) {
       hierarchyService.deleteLevel(level.id);
+
+      logEvent({
+        timestamp: Date.now(),
+        appId,
+        user: user?.username,
+        event: "content_delete",
+        meta: { type: "level", levelId: level.id },
+      });
     }
   };
 
@@ -164,7 +177,7 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
     const loadComponentTypes = async () => {
       setIsLoadingTypes(true);
       try {
-        const { data, error } = await LearningService.getComponentTypes();
+        const { data, error } = await LearningService.getComponentTypes(appId);
         if (error) {
           console.error("Bileşen türleri yüklenirken hata:", error);
         } else if (data) {
@@ -234,6 +247,14 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
   const handleComponentDelete = (component: ComponentItem) => {
     if (window.confirm("Bileşeni silmek istediğinize emin misiniz?")) {
       hierarchyService.deleteComponent(component.id);
+
+      logEvent({
+        timestamp: Date.now(),
+        appId,
+        user: user?.username,
+        event: "content_delete",
+        meta: { type: "component", componentId: component.id },
+      });
     }
   };
 
@@ -261,6 +282,18 @@ const LevelDropdown: React.FC<LevelDropdownProps> = ({
     };
 
     hierarchyService.addComponent(level.id, newComponent);
+
+    logEvent({
+      timestamp: Date.now(),
+      appId,
+      user: user?.username,
+      event: "content_add",
+      meta: {
+        type: "component",
+        componentType: componentType.type_key,
+        levelId: level.id,
+      },
+    });
   };
 
   const renderIcon = () => {

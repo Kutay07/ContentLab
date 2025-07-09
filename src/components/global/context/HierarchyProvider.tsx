@@ -9,6 +9,8 @@ import React, {
 } from "react";
 import { ContentHierarchyService } from "@/services/ContentHierarchyService";
 import { LevelHierarchy } from "@/types/LevelHierarchy";
+import { useAppContext } from "@/contexts/AppContext";
+import { useAuth } from "@/hooks/useAuth";
 
 interface HierarchyContextType {
   hierarchy: LevelHierarchy;
@@ -36,6 +38,14 @@ export default function HierarchyProvider({
     service.getHierarchy()
   );
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // App & User değiştiğinde log context'i güncelle
+  const { appId } = useAppContext();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    service.setContext(appId, user?.username);
+  }, [appId, user?.username]);
 
   // Servisi sadece ilk render'dan hemen sonra hazırla
   useEffect(() => {

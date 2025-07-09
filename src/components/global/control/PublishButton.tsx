@@ -4,7 +4,10 @@ import React, { useState } from "react";
 import { useHierarchy } from "../context/HierarchyProvider";
 import { LearningService } from "@/services/learning-service";
 import { generateSqlFromDiff } from "@/utils/diffToSql";
-import { getSupabaseClient } from "@/services/supabase";
+import { supabaseManager } from "@/services/supabaseManager";
+import { logEvent } from "@/utils/logger";
+import { useAuth } from "@/hooks/useAuth";
+import { useAppContext } from "@/contexts/AppContext";
 import { ContentHierarchyService } from "@/services/ContentHierarchyService";
 
 interface PublishButtonProps {
@@ -17,21 +20,31 @@ export default function PublishButton({
   onToast,
 }: PublishButtonProps) {
   const { service } = useHierarchy();
+  const { appId } = useAppContext();
+  const { user } = useAuth();
   const [isPublishing, setIsPublishing] = useState(false);
 
   const handlePublish = async () => {
     if (isPublishing) return;
     setIsPublishing(true);
 
+    // Log publish_start
+    logEvent({
+      timestamp: Date.now(),
+      appId,
+      user: user?.username,
+      event: "publish_start",
+    });
+
     try {
-      const client = getSupabaseClient();
+      const client = supabaseManager.getClient(appId);
       if (!client) {
         throw new Error("Supabase client başlatılmamış.");
       }
 
       // 1) Yayındaki veriyi al ve baseline olarak ayarla
       const { data: liveHierarchy, error: liveErr } =
-        await LearningService.getLevelGroupsWithDetails();
+        await LearningService.getLevelGroupsWithDetails(appId);
       if (liveErr || !liveHierarchy) {
         throw new Error(liveErr?.message || "Yayınlanmış veri alınamadı");
       }
@@ -85,12 +98,30 @@ export default function PublishButton({
       // Başarılı
       service.markSynced();
       onToast?.("İçerik başarıyla yayınlandı!", "success");
+
+      // Log success
+      logEvent({
+        timestamp: Date.now(),
+        appId,
+        user: user?.username,
+        event: "publish_success",
+      });
     } catch (err) {
       console.error("Publish hata:", err);
       onToast?.(
         err instanceof Error ? err.message : "Bilinmeyen yayınlama hatası",
         "error"
       );
+
+      logEvent({
+        timestamp: Date.now(),
+        appId,
+        user: user?.username,
+        event: "publish_error",
+        meta: {
+          message: err instanceof Error ? err.message : String(err),
+        },
+      });
     } finally {
       setIsPublishing(false);
     }

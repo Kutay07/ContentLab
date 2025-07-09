@@ -28,6 +28,7 @@ Awesome Editor, mobil eğitim uygulamalarında kullanılacak içerikleri düzenl
 ## 🏗️ Teknoloji Stack'i
 
 ### Frontend
+
 - **Next.js 15.3.3** - React tabanlı full-stack framework
 - **TypeScript 5.0** - Tip güvenliği için
 - **Tailwind CSS 4.0** - Utility-first CSS framework
@@ -35,11 +36,13 @@ Awesome Editor, mobil eğitim uygulamalarında kullanılacak içerikleri düzenl
 - **React 19** - Modern React özellikleri
 
 ### Backend & Database
+
 - **Supabase** - Backend-as-a-Service çözümü
 - **PostgreSQL** - İlişkisel veritabanı
 - **Real-time subscriptions** - Canlı veri senkronizasyonu
 
 ### Development Tools
+
 - **ESLint 9** - Code linting
 - **PostCSS** - CSS işleme
 - **UUID** - Benzersiz ID oluşturma
@@ -47,13 +50,15 @@ Awesome Editor, mobil eğitim uygulamalarında kullanılacak içerikleri düzenl
 ## 🚀 Hızlı Başlangıç
 
 ### Önkoşullar
-- Node.js 20+ 
+
+- Node.js 20+
 - npm/yarn/pnpm
 - Git
 
 ### Kurulum
 
 1. **Projeyi klonlayın**
+
 ```bash
 git clone https://github.com/your-username/awesome-editor.git
 cd awesome-editor
@@ -78,7 +83,7 @@ pnpm dev
 ```
 
 4. **Tarayıcıda açın**
-[http://localhost:3000](http://localhost:3000) adresine gidin
+   [http://localhost:3000](http://localhost:3000) adresine gidin
 
 ## 📁 Proje Yapısı
 
@@ -114,16 +119,19 @@ awesome-editor/
 ## 🎮 Kullanım Kılavuzu
 
 ### 1. Uygulama Seçimi
+
 - Ana sayfada mevcut uygulamalar arasından birini seçin
 - Aktif, geliştirme ve pasif uygulamalar kategorilere ayrılmıştır
 - Her uygulama kendi Supabase bağlantısına sahiptir
 
 ### 2. İçerik Yönetimi
+
 - **Seviye Grupları**: Ana kategoriler (örn: "Temel JavaScript")
 - **Seviyeler**: Alt kategoriler (örn: "Değişkenler ve Veri Tipleri")
 - **Bileşenler**: İçerik parçaları (metin, video, quiz vb.)
 
 ### 3. Bileşen Düzenleme
+
 ```typescript
 // Örnek bileşen yapısı
 {
@@ -140,6 +148,7 @@ awesome-editor/
 ```
 
 ### 4. Mobil Önizleme
+
 - Sol panelde gerçek zamanlı mobil görünüm
 - İçerik değişiklikleri anında yansır
 - Farklı ekran boyutları için responsive tasarım
@@ -151,7 +160,7 @@ awesome-editor/
 Proje boyunca kullanılan ana servis sınıfı:
 
 ```typescript
-import { contentHierarchyService } from '@/services/ContentHierarchyService';
+import { contentHierarchyService } from "@/services/ContentHierarchyService";
 
 // Hiyerarşi okuma
 const hierarchy = contentHierarchyService.getHierarchy();
@@ -168,29 +177,29 @@ contentHierarchyService.redo();
 
 // Reactive updates için subscription
 const unsubscribe = contentHierarchyService.subscribe((newHierarchy) => {
-  console.log('Hiyerarşi güncellendi:', newHierarchy);
+  console.log("Hiyerarşi güncellendi:", newHierarchy);
 });
 ```
 
 ### React Hook Kullanımı
 
 ```typescript
-import { useState, useEffect } from 'react';
-import { contentHierarchyService } from '@/services/ContentHierarchyService';
+import { useState, useEffect } from "react";
+import { contentHierarchyService } from "@/services/ContentHierarchyService";
 
 export const useContentHierarchy = () => {
-  const [hierarchy, setHierarchy] = useState(() => 
+  const [hierarchy, setHierarchy] = useState(() =>
     contentHierarchyService.getHierarchy()
   );
-  
+
   useEffect(() => {
     const unsubscribe = contentHierarchyService.subscribe(setHierarchy);
     return unsubscribe;
   }, []);
-  
+
   return {
     hierarchy,
-    service: contentHierarchyService
+    service: contentHierarchyService,
   };
 };
 ```
@@ -200,15 +209,15 @@ export const useContentHierarchy = () => {
 Proje Supabase Auth kullanır:
 
 ```typescript
-import { useAuthStore } from '@/stores/auth';
+import { useAuthStore } from "@/stores/auth";
 
 function MyComponent() {
   const { user, isAuthenticated, login, logout } = useAuthStore();
-  
+
   if (!isAuthenticated) {
     return <LoginPage />;
   }
-  
+
   return <Dashboard user={user} />;
 }
 ```
@@ -276,33 +285,44 @@ Proje özel renk paleti kullanır:
 
 ## 🔧 Konfigürasyon
 
-### Uygulama Ekleme
+### Yeni Uygulama Ekleme (API Üzerinden)
 
-Yeni bir uygulama eklemek için `src/config/apps.ts` dosyasını düzenleyin:
+Uygulama JSON dosyasını manuel olarak eklemek yerine artık REST API üzerinden
+POST isteği yaparak yeni uygulama tanımlayabilirsiniz:
 
-```typescript
-export const APPS_CONFIG: AppConfig[] = [
-  {
-    id: 'yeni-uygulama',
-    name: 'Yeni Eğitim Uygulaması',
-    description: 'Açıklama',
-    status: 'active',
-    supabase: {
-      url: 'https://your-project.supabase.co',
-      anonKey: 'your-anon-key',
-      projectId: 'your-project-id'
+```bash
+curl -X POST http://localhost:3000/api/apps \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "yeni-uygulama",
+    "name": "Yeni Eğitim Uygulaması",
+    "description": "Açıklama",
+    "status": "active",
+    "supabase": {
+      "url": "https://your-project.supabase.co",
+      "anonKey": "your-anon-key",
+      "projectId": "your-project-id"
     },
-    icon: '🎓',
-    color: 'blue',
-    createdAt: '2025-01-15',
-    lastUpdated: '2025-01-15'
-  }
-];
+    "icon": "🎓",
+    "color": "blue",
+    "createdAt": "2025-01-15T00:00:00.000Z",
+    "lastUpdated": "2025-01-15T00:00:00.000Z"
+  }'
 ```
+
+### API Endpoint'leri
+
+| Yöntem | URL                   | Açıklama                                  |
+| ------ | --------------------- | ----------------------------------------- |
+| GET    | `/api/apps`           | Tüm uygulama konfigürasyonlarını getirir  |
+| POST   | `/api/apps`           | Yeni uygulama oluşturur                   |
+| GET    | `/api/log-connection` | Bağlantı geçmişini filtreleyerek listeler |
+| POST   | `/api/log-connection` | Bağlantı olayını log dosyasına ekler      |
 
 ## 🧪 Test ve Geliştirme
 
 ### Available Scripts
+
 ```bash
 # Geliştirme sunucusu
 npm run dev
@@ -323,8 +343,8 @@ Geliştirme sırasında konsol logları aktif:
 
 ```typescript
 // Servis operasyonları loglanır
-console.log('Component eklendi:', component);
-console.log('Hierarchy güncellendi:', hierarchy);
+console.log("Component eklendi:", component);
+console.log("Hierarchy güncellendi:", hierarchy);
 ```
 
 ## 🤝 Katkıda Bulunma
@@ -345,6 +365,7 @@ console.log('Hierarchy güncellendi:', hierarchy);
 ## 📝 Sürüm Geçmişi
 
 ### v0.1.0 (Mevcut)
+
 - ✅ Temel içerik yönetimi sistemi
 - ✅ Mobil önizleme
 - ✅ Çoklu Supabase desteği
@@ -352,6 +373,7 @@ console.log('Hierarchy güncellendi:', hierarchy);
 - ✅ Responsive tasarım
 
 ### Gelecek Özellikler
+
 - 🔄 Drag & Drop interface
 - 🤖 AI destekli içerik oluşturma
 - 📊 Analytics ve raporlama

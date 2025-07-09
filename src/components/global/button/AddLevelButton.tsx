@@ -4,6 +4,9 @@ import React, { useState } from "react";
 import { generateId } from "@/utils/generateId";
 import AddLevelModal from "./AddLevelModal";
 import { useHierarchy } from "../context/HierarchyProvider";
+import { useAppContext } from "@/contexts/AppContext";
+import { useAuth } from "@/hooks/useAuth";
+import { logEvent } from "@/utils/logger";
 
 interface AddLevelButtonProps {
   onAdd?: (title: string) => void; // Keep for backward compatibility
@@ -19,6 +22,8 @@ const AddLevelButton: React.FC<AddLevelButtonProps> = ({
   groupId,
 }) => {
   const { service } = useHierarchy();
+  const { appId } = useAppContext();
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleButtonClick = () => {
@@ -42,6 +47,14 @@ const AddLevelButton: React.FC<AddLevelButtonProps> = ({
       onAdd?.(title);
 
       console.log("Seviye Başarıyla Eklendi:", { title, order, groupId });
+
+      logEvent({
+        timestamp: Date.now(),
+        appId,
+        user: user?.username,
+        event: "content_add",
+        meta: { type: "level", title, groupId },
+      });
     } catch (error) {
       console.error("Seviye eklenirken hata:", error);
     }

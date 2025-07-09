@@ -5,6 +5,8 @@ import {
   ComponentItem,
 } from "../types/LevelHierarchy";
 import { generateId } from "../utils/generateId";
+import { logEvent } from "@/utils/logger";
+import { LogEventType } from "@/types/log";
 
 /**
  * Command interface for undo/redo functionality
@@ -49,6 +51,17 @@ export class ContentHierarchyService {
 
   // Baseline for diff comparison
   private baselineHierarchy: LevelHierarchy = [];
+
+  // Loglama için context (appId & user)
+  private logContext: { appId?: string; user?: string } = {};
+
+  /**
+   * UI katmanı tarafından çağrılır; ContentHierarchyService üzerinde hangi uygulama ve kullanıcı
+   * bağlamında işlem yapıldığını belirtir.
+   */
+  public setContext(appId?: string, user?: string) {
+    this.logContext = { appId, user };
+  }
 
   private constructor() {}
 
@@ -112,11 +125,47 @@ export class ContentHierarchyService {
       return; // Bu tip komutları geçmişe ekleme
     }
 
-    this.commandHistory.push({
+    const entry = {
       type,
       payload: this.deepClone(payload),
       timestamp: Date.now(),
-    });
+    };
+
+    this.commandHistory.push(entry);
+
+    // ------ LOG EVENT ------
+    const { appId, user } = this.logContext;
+    if (appId) {
+      let event: LogEventType | null = null;
+      if (["addLevelGroup", "addLevel", "addComponent"].includes(type)) {
+        event = "content_add";
+      } else if (
+        [
+          "updateLevelGroup",
+          "updateLevel",
+          "updateComponent",
+          "moveLevelGroup",
+          "moveLevel",
+          "moveComponent",
+        ].includes(type)
+      ) {
+        event = "content_update";
+      } else if (
+        ["deleteLevelGroup", "deleteLevel", "deleteComponent"].includes(type)
+      ) {
+        event = "content_delete";
+      }
+
+      if (event) {
+        logEvent({
+          timestamp: entry.timestamp,
+          appId,
+          user,
+          event,
+          meta: { type, ...payload },
+        });
+      }
+    }
 
     // Command history boyutunu sınırla (son 100 komut)
     if (this.commandHistory.length > 100) {

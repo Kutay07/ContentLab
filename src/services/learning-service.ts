@@ -1,4 +1,4 @@
-import { getSupabaseClient } from "@/services/supabase";
+import { supabaseManager } from "@/services/supabaseManager";
 import { Database } from "@/types/supabase";
 import {
   LevelHierarchy,
@@ -16,26 +16,23 @@ type ComponentType = Database["public"]["Tables"]["component_types"]["Row"];
 
 // Öğrenme uygulaması için Supabase servisleri
 export class LearningService {
-  private static getClient() {
-    const client = getSupabaseClient();
-    if (!client) {
-      throw new Error(
-        "Supabase client başlatılmamış. Önce uygulamaya bağlanın."
-      );
+  private static getClient(appId?: string) {
+    if (!appId) {
+      throw new Error("appId parametresi gerekli");
     }
-    return client;
+    return supabaseManager.getClient(appId);
   }
 
   /**
    * Tüm seviye gruplarını ve ilişkili verilerini getirir
    * Seviye grupları, seviyeler, bileşenler ve bileşen türleri dahil
    */
-  static async getLevelGroupsWithDetails(): Promise<{
+  static async getLevelGroupsWithDetails(appId: string): Promise<{
     data: LevelHierarchy | null;
     error: Error | null;
   }> {
     try {
-      const client = this.getClient();
+      const client = this.getClient(appId);
 
       // Adım 1: Level groups ve levels'ı getir
       const { data: levelGroupsData, error: levelGroupsError } = await client
@@ -232,12 +229,12 @@ export class LearningService {
   /**
    * Tüm bileşen türlerini getirir
    */
-  static async getComponentTypes(): Promise<{
+  static async getComponentTypes(appId?: string): Promise<{
     data: ComponentType[] | null;
     error: Error | null;
   }> {
     try {
-      const client = this.getClient();
+      const client = this.getClient(appId);
 
       const { data, error } = await client
         .from("component_types")

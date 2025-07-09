@@ -8,6 +8,7 @@ import {
 import { userStore } from "./UserStore";
 import { tokenManager } from "./TokenManager";
 import { securityManager } from "./SecurityManager";
+import { supabaseManager } from "@/services/supabaseManager";
 
 type AuthStateListener = (state: AuthState) => void;
 type AuthEventListener = (event: AuthEvent) => void;
@@ -144,6 +145,9 @@ class AuthService {
     try {
       // Token'ı temizle
       tokenManager.clearToken();
+
+      // Tüm Supabase bağlantılarını kes
+      supabaseManager.disconnectAll();
 
       // State'i temizle
       this.updateState({

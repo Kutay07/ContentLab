@@ -3,13 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import Orb from "@/app/auth/login/Orb";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isFormHovered, setIsFormHovered] = useState(false);
 
   const login = useAuthStore((state) => state.login);
   const router = useRouter();
@@ -20,7 +23,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const success = await login(username, password, rememberMe);
+      const success = await login(username, password, false);
       if (success) {
         router.push("/");
       } else {
@@ -34,30 +37,45 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="bg-white rounded-xl shadow-lg p-8">
+    <div className="min-h-screen w-full relative flex items-center justify-center p-4">
+      {/* Background */}
+      {/* <div className="absolute inset-0 overflow-hidden bg-[#000000]"> */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#5e3039] via-[#111c14] to-slate-950">
+        <Orb
+          hoverIntensity={1.0}
+          rotateOnHover={true}
+          hue={200}
+          forceHoverState={isFormHovered}
+        />
+      </div>
+
+      {/* Glass Card */}
+      <div className="relative z-10 w-full max-w-sm">
+        <div
+          className="bg-white/5 backdrop-blur-md rounded-2xl shadow-lg p-8 border border-white/10"
+          onMouseEnter={() => setIsFormHovered(true)}
+          onMouseLeave={() => setIsFormHovered(false)}
+        >
           {/* Header */}
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              İçerik Yönetim Paneli
-            </h2>
-            <p className="text-gray-600">Hesabınıza giriş yapın</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Giriş Yap</h1>
+            <p className="text-white/80 text-sm">Hesabınızla devam edin</p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-400/20 rounded-lg backdrop-blur-sm">
+              <p className="text-red-200 text-sm text-center">{error}</p>
             </div>
           )}
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Username Field */}
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-white/90 mb-2"
               >
                 Kullanıcı Adı
               </label>
@@ -68,55 +86,49 @@ export default function LoginPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/60 focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all backdrop-blur-sm"
                 placeholder="Kullanıcı adınızı girin"
               />
             </div>
 
+            {/* Password Field */}
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-white/90 mb-2"
               >
                 Şifre
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="Şifrenizi girin"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 pr-12 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/60 focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all backdrop-blur-sm"
+                  placeholder="Şifrenizi girin"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-white/60 hover:text-white/80 transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
-            {/* Remember Me Checkbox */}
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label
-                htmlFor="remember-me"
-                className="ml-2 block text-sm text-gray-700"
-              >
-                Beni Hatırla
-                <span className="text-gray-500 text-xs ml-1">
-                  ({rememberMe ? "7 gün" : "24 saat"})
-                </span>
-              </label>
-            </div>
-
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="w-full bg-white/15 hover:bg-white/25 disabled:bg-white/5 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 focus:ring-2 focus:ring-white/40 focus:ring-offset-2 focus:ring-offset-transparent backdrop-blur-sm border border-white/15 hover:border-white/30"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -124,30 +136,21 @@ export default function LoginPage() {
                   Giriş yapılıyor...
                 </div>
               ) : (
-                "Giriş Yap"
+                "Giriş"
               )}
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 text-center mb-3">
-              <strong>Mevcut Hesaplar:</strong>
+          {/* Demo Info */}
+          {/* <div className="mt-8 p-4 bg-white/5 rounded-xl backdrop-blur-sm border border-white/15">
+            <p className="text-sm text-white/80 text-center mb-3">
+              <strong>Test Hesapları:</strong>
             </p>
-            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-              <div>admin / admin123</div>
-              <div>editor / editor123</div>
-              <div>manager / manager123</div>
-              <div>demo / demo123</div>
-              <div>test / test123</div>
+            <div className="grid grid-cols-1 gap-2 text-xs text-white/70">
+              <div className="text-center">admin / admin123</div>
+              <div className="text-center">demo / demo123</div>
             </div>
-            <p className="text-xs text-gray-500 text-center mt-3">
-              Tüm hesaplar aynı yetkilere sahiptir
-            </p>
-            <p className="text-xs text-gray-400 text-center mt-2">
-              💡 "Beni Hatırla" seçeneği token süresini 7 güne çıkarır
-            </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
