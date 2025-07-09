@@ -40,11 +40,11 @@ export default function LoginPage() {
     <div className="min-h-screen w-full relative flex items-center justify-center p-4">
       {/* Background */}
       {/* <div className="absolute inset-0 overflow-hidden bg-[#000000]"> */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#5e3039] via-[#111c14] to-slate-950">
+      <div className="absolute inset-0 bg-gradient-to-br from-[#060010] via-[#140036] to-slate-950">
         <Orb
           hoverIntensity={1.0}
           rotateOnHover={true}
-          hue={200}
+          hue={0}
           forceHoverState={isFormHovered}
         />
       </div>
