@@ -3,13 +3,21 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth";
+import AuthLoading, { AuthErrorDisplay } from "@/components/auth/AuthLoading";
+import { AuthErrorBoundary } from "@/components/auth/AuthErrorBoundary";
+import {
+  startTokenExpiryMonitoring,
+  stopTokenExpiryMonitoring,
+} from "@/services/auth";
 
 interface AuthProviderProps {
   children: React.ReactNode;
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const { isAuthenticated, initializeAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, error, initializeAuth, clearError } =
+    useAuthStore();
+
   const router = useRouter();
   const pathname = usePathname();
 
@@ -20,28 +28,52 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     // Initialize auth state on app start
     initializeAuth();
+
+    // Start token expiry monitoring
+    startTokenExpiryMonitoring();
+
+    return () => {
+      stopTokenExpiryMonitoring();
+    };
   }, [initializeAuth]);
 
   useEffect(() => {
-    // Redirect to login if not authenticated and trying to access protected route
-    if (!isAuthenticated && !isPublicRoute) {
-      router.push("/auth/login");
-    }
+    // Redirect logic - sadece loading tamamlandığında çalışır
+    if (!isLoading) {
+      // Redirect to login if not authenticated and trying to access protected route
+      if (!isAuthenticated && !isPublicRoute) {
+        router.push("/auth/login");
+      }
 
-    // Redirect to home if authenticated and trying to access login page
-    if (isAuthenticated && pathname === "/auth/login") {
-      router.push("/");
+      // Redirect to home if authenticated and trying to access login page
+      if (isAuthenticated && pathname === "/auth/login") {
+        router.push("/");
+      }
     }
-  }, [isAuthenticated, isPublicRoute, pathname, router]);
+  }, [isAuthenticated, isLoading, isPublicRoute, pathname, router]);
 
-  // Show loading or content based on auth state
-  if (!isAuthenticated && !isPublicRoute) {
+  // Error state handling
+  if (error && !isPublicRoute) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <AuthErrorDisplay
+        error={error}
+        onRetry={() => {
+          clearError();
+          initializeAuth();
+        }}
+      />
     );
   }
 
-  return <>{children}</>;
+  // Loading state - authentication durumu belirsizken
+  if (isLoading) {
+    return <AuthLoading message="Kimlik doğrulanıyor..." />;
+  }
+
+  // Unauthenticated user trying to access protected route
+  if (!isAuthenticated && !isPublicRoute) {
+    return <AuthLoading message="Giriş sayfasına yönlendiriliyor..." />;
+  }
+
+  return <AuthErrorBoundary>{children}</AuthErrorBoundary>;
 }

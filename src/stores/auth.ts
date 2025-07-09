@@ -1,112 +1,86 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import Cookies from 'js-cookie';
+import { create } from "zustand";
+import {
+  authService,
+  AuthState as NewAuthState,
+  LoginCredentials,
+} from "@/services/auth";
 
-interface AuthState {
+// Zustand store interface (eski interface'i koruyoruz)
+interface AuthStore {
+  // State properties
   isAuthenticated: boolean;
+  isLoading: boolean;
   user: {
+    id: string;
     username: string;
     name: string;
   } | null;
-  login: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  error: string | null;
+
+  // Actions
+  login: (
+    username: string,
+    password: string,
+    rememberMe?: boolean
+  ) => Promise<boolean>;
+  logout: () => Promise<void>;
   initializeAuth: () => void;
+  clearError: () => void;
+
+  // Internal state sync
+  _syncFromAuthService: (newState: NewAuthState) => void;
 }
 
-// Statik kullanıcı bilgileri (geçici)
-// Yeni kullanıcı eklemek için bu listeye ekleme yapabilirsiniz
-const STATIC_CREDENTIALS = [
-  {
-    username: 'admin',
-    password: 'admin123',
-    name: 'Admin Kullanıcı'
-  },
-  {
-    username: 'editor',
-    password: 'editor123',
-    name: 'Editör Kullanıcı'
-  },
-  {
-    username: 'manager',
-    password: 'manager123',
-    name: 'Manager Kullanıcı'
-  },
-  {
-    username: 'demo',
-    password: 'demo123',
-    name: 'Demo Kullanıcı'
-  },
-  {
-    username: 'test',
-    password: 'test123',
-    name: 'Test Kullanıcı'
-  }
-];
+export const useAuthStore = create<AuthStore>()((set, get) => {
+  // Auth service'den state değişikliklerini dinle
+  const unsubscribe = authService.subscribe((newState) => {
+    get()._syncFromAuthService(newState);
+  });
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      isAuthenticated: false,
-      user: null,
-      
-      login: async (username: string, password: string): Promise<boolean> => {
-        // Statik kontrol
-        const foundUser = STATIC_CREDENTIALS.find(
-          cred => cred.username === username && cred.password === password
-        );
-        
-        if (foundUser) {
-          const user = { 
-            username: foundUser.username,
-            name: foundUser.name
-          };
-          
-          // Cookie'ye auth token kaydet
-          Cookies.set('auth-token', 'static-token-' + Date.now(), { expires: 7 });
-          
-          set({
-            isAuthenticated: true,
-            user
-          });
-          
-          return true;
-        }
-        
-        return false;
-      },
-      
-      logout: () => {
-        // Cookie'yi temizle
-        Cookies.remove('auth-token');
-        
-        set({
-          isAuthenticated: false,
-          user: null
-        });
-      },
-      
-      initializeAuth: () => {
-        const token = Cookies.get('auth-token');
-        if (token) {
-          // Token varsa varsayılan olarak admin kullanıcısını yükle
-          // Gerçek uygulamada token'dan kullanıcı bilgisi çıkarılır
-          const defaultUser = STATIC_CREDENTIALS[0];
-          set({
-            isAuthenticated: true,
-            user: { 
-              username: defaultUser.username,
-              name: defaultUser.name
-            }
-          });
-        }
-      }
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({ 
-        isAuthenticated: state.isAuthenticated,
-        user: state.user
-      }),
-    }
-  )
-); 
+  return {
+    // Initial state
+    isAuthenticated: false,
+    isLoading: true, // Başlangıçta loading true
+    user: null,
+    error: null,
+
+    login: async (
+      username: string,
+      password: string,
+      rememberMe: boolean = false
+    ): Promise<boolean> => {
+      const credentials: LoginCredentials = {
+        username,
+        password,
+        rememberMe,
+      };
+
+      const result = await authService.login(credentials);
+      return result.success;
+    },
+
+    logout: async (): Promise<void> => {
+      await authService.logout();
+    },
+
+    initializeAuth: () => {
+      // Auth service kendi kendine initialize olur, sadece current state'i sync edelim
+      const currentState = authService.getState();
+      get()._syncFromAuthService(currentState);
+    },
+
+    clearError: () => {
+      set({ error: null });
+    },
+
+    // Auth service'den gelen state'i Zustand store'a sync et
+    _syncFromAuthService: (newState: NewAuthState) => {
+      set({
+        isAuthenticated: newState.isAuthenticated,
+        isLoading: newState.isLoading,
+        user: newState.user,
+        error: newState.error,
+      });
+    },
+  };
+});

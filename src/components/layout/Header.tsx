@@ -6,11 +6,12 @@ import { useAppStore } from "@/stores/app";
 import { clearSupabaseClient } from "@/services/supabase";
 
 export default function Header() {
-  const { user, logout, isAuthenticated } = useAuthStore();
+  const { user, logout, isAuthenticated, isLoading, error } = useAuthStore();
   const { selectedApp, clearApp } = useAppStore();
   const router = useRouter();
 
-  if (!isAuthenticated) {
+  // Loading durumunda header gösterme
+  if (isLoading || !isAuthenticated) {
     return null;
   }
 
@@ -18,6 +19,15 @@ export default function Header() {
     clearSupabaseClient();
     clearApp();
     router.push("/");
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   return (
@@ -52,6 +62,26 @@ export default function Header() {
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
+            {/* Error notification */}
+            {error && (
+              <div className="flex items-center space-x-2 text-red-600">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+                <span className="text-sm font-medium">Hata</span>
+              </div>
+            )}
+
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -65,7 +95,7 @@ export default function Header() {
               </div>
 
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 <svg

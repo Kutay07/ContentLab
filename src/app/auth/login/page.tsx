@@ -1,32 +1,33 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  
+  const [error, setError] = useState("");
+
   const login = useAuthStore((state) => state.login);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const success = await login(username, password);
+      const success = await login(username, password, rememberMe);
       if (success) {
-        router.push('/');
+        router.push("/");
       } else {
-        setError('Geçersiz kullanıcı adı veya şifre');
+        setError("Geçersiz kullanıcı adı veya şifre");
       }
     } catch (err) {
-      setError('Giriş yapılırken bir hata oluştu');
+      setError("Giriş yapılırken bir hata oluştu");
     } finally {
       setIsLoading(false);
     }
@@ -41,9 +42,7 @@ export default function LoginPage() {
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
               İçerik Yönetim Paneli
             </h2>
-            <p className="text-gray-600">
-              Hesabınıza giriş yapın
-            </p>
+            <p className="text-gray-600">Hesabınıza giriş yapın</p>
           </div>
 
           {/* Error Message */}
@@ -56,7 +55,10 @@ export default function LoginPage() {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Kullanıcı Adı
               </label>
               <input
@@ -72,7 +74,10 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Şifre
               </label>
               <input
@@ -87,6 +92,27 @@ export default function LoginPage() {
               />
             </div>
 
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label
+                htmlFor="remember-me"
+                className="ml-2 block text-sm text-gray-700"
+              >
+                Beni Hatırla
+                <span className="text-gray-500 text-xs ml-1">
+                  ({rememberMe ? "7 gün" : "24 saat"})
+                </span>
+              </label>
+            </div>
+
             <button
               type="submit"
               disabled={isLoading}
@@ -98,7 +124,7 @@ export default function LoginPage() {
                   Giriş yapılıyor...
                 </div>
               ) : (
-                'Giriş Yap'
+                "Giriş Yap"
               )}
             </button>
           </form>
@@ -118,9 +144,12 @@ export default function LoginPage() {
             <p className="text-xs text-gray-500 text-center mt-3">
               Tüm hesaplar aynı yetkilere sahiptir
             </p>
+            <p className="text-xs text-gray-400 text-center mt-2">
+              💡 "Beni Hatırla" seçeneği token süresini 7 güne çıkarır
+            </p>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}
