@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import Orb from "@/app/auth/login/Orb";
+import Orb from "@/components/layout/backgrounds/Orb";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -21,6 +21,9 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+
+    // 1 saniyelik gecikme
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     try {
       const success = await login(username, password, false);

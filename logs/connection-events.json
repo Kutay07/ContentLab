@@ -362,5 +362,175 @@
     "timestamp": 1752092362466,
     "event": "disconnect",
     "appId": "test-app"
+  },
+  {
+    "timestamp": 1752095797582,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752095810125,
+    "event": "disconnect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752096577368,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752096579462,
+    "event": "disconnect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752096589816,
+    "event": "connect",
+    "appId": "1"
+  },
+  {
+    "timestamp": 1752096592549,
+    "event": "disconnect",
+    "appId": "1"
+  },
+  {
+    "timestamp": 1752096594605,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752166955006,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752170263570,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752170847363,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752170878233,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752170973638,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752177838037,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752178013586,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752178599189,
+    "event": "connect",
+    "appId": "1"
+  },
+  {
+    "timestamp": 1752178634822,
+    "event": "disconnect",
+    "appId": "1"
+  },
+  {
+    "timestamp": 1752179992811,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752180090767,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752180181676,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752180241906,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752180379668,
+    "event": "connect",
+    "appId": "1"
+  },
+  {
+    "timestamp": 1752180431352,
+    "event": "disconnect",
+    "appId": "1"
+  },
+  {
+    "timestamp": 1752181705561,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752181773630,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752181780854,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752181924636,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752182028408,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752182041410,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752182070235,
+    "event": "connect",
+    "appId": "test-app"
+  },
+  {
+    "timestamp": 1752242296046,
+    "event": "connect",
+    "appId": "1"
+  },
+  {
+    "timestamp": 1752242304268,
+    "event": "disconnect",
+    "appId": "1"
+  },
+  {
+    "timestamp": 1752242304447,
+    "event": "connect",
+    "appId": "1"
+  },
+  {
+    "timestamp": 1752242304518,
+    "event": "connect",
+    "appId": "1"
+  },
+  {
+    "timestamp": 1752242307703,
+    "event": "disconnect",
+    "appId": "1"
   }
 ]
