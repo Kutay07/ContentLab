@@ -23,6 +23,20 @@ export default function DraftControls({
   const [draftName, setDraftName] = useState("");
   const [savedDrafts, setSavedDrafts] = useState<SavedDraft[]>([]);
 
+  // === Autosave State ===
+  const [autosaveEnabled, setAutosaveEnabled] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true; // SSR guard
+    const stored = localStorage.getItem("autosaveEnabled");
+    return stored === null ? true : stored === "true";
+  });
+
+  // Autosave toggle persistance
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("autosaveEnabled", autosaveEnabled.toString());
+    }
+  }, [autosaveEnabled]);
+
   // Dropdown referansı
   const loadDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +81,77 @@ export default function DraftControls({
     drafts.sort((a, b) => b.timestamp - a.timestamp);
     setSavedDrafts(drafts);
   };
+
+  // === Autosave Implementation ===
+  const performAutoSave = () => {
+    try {
+      if (!autosaveEnabled) return;
+
+      const now = Date.now();
+      const nowDate = new Date(now);
+      const dd = String(nowDate.getDate()).padStart(2, "0");
+      const mm = String(nowDate.getMonth() + 1).padStart(2, "0");
+      const yyyy = nowDate.getFullYear();
+      const baseName = `autosave-${dd}-${mm}-${yyyy}`;
+
+      // En son aynı tarihli autosave taslağını bul
+      let latestKey: string | null = null;
+      let latestTimestamp = 0;
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("draft*" + baseName)) {
+          try {
+            const draftData = JSON.parse(localStorage.getItem(key) || "{}");
+            if (draftData.timestamp && draftData.timestamp > latestTimestamp) {
+              latestTimestamp = draftData.timestamp;
+              latestKey = key;
+            }
+          } catch (err) {
+            // ignore invalid json
+          }
+        }
+      }
+
+      let finalName: string;
+      if (latestKey && now - latestTimestamp < 60 * 60 * 1000) {
+        // Son 1 saat içinde kayıt var, üzerine yaz
+        finalName = latestKey.replace("draft*", "");
+      } else {
+        // Yeni kayıt ismi (saat-dakika ekle)
+        const HH = String(nowDate.getHours()).padStart(2, "0");
+        const MM = String(nowDate.getMinutes()).padStart(2, "0");
+        finalName = `${baseName}-${HH}-${MM}`;
+      }
+
+      const draftData = {
+        timestamp: now,
+        data: service.exportDraft(),
+      };
+
+      localStorage.setItem(`draft*${finalName}`, JSON.stringify(draftData));
+
+      // Listeyi güncelle
+      loadSavedDrafts();
+    } catch (error) {
+      console.error("Otokayıt yapılamadı:", error);
+    }
+  };
+
+  // Service değişikliklerini dinle & autosave
+  useEffect(() => {
+    if (!autosaveEnabled) return;
+
+    // service.subscribe her değişiklikte tetikleniyor
+    const unsubscribe = service.subscribe(() => {
+      performAutoSave();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+    // autosaveEnabled bağımlılığı önemli
+  }, [autosaveEnabled, service]);
 
   const handleSaveDraft = () => {
     try {
@@ -164,6 +249,48 @@ export default function DraftControls({
           />
         </svg>
         Kaydet
+      </button>
+
+      {/* Autosave Toggle Button */}
+      <button
+        onClick={() => setAutosaveEnabled((prev) => !prev)}
+        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md border transition-colors ${
+          autosaveEnabled
+            ? "bg-green-100 text-green-700 border-green-300 hover:bg-green-200"
+            : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+        }`}
+        title="Otokayıt Aç/Kapat"
+      >
+        {autosaveEnabled ? (
+          <svg
+            className="w-4 h-4 mr-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        ) : (
+          <svg
+            className="w-4 h-4 mr-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        )}
+        {autosaveEnabled ? "Otokayıt Açık" : "Otokayıt Kapalı"}
       </button>
 
       {/* Load Draft Dropdown */}

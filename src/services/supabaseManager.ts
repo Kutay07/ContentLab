@@ -27,7 +27,7 @@ class SupabaseManager {
    */
   async connect(
     app: AppConfig,
-    testConnection: boolean = true
+    testConnection: boolean = false
   ): Promise<SupabaseClient> {
     // Zaten bağlıysa mevcut client'ı döndür
     const existing = this.connections.get(app.id);
@@ -35,14 +35,17 @@ class SupabaseManager {
 
     const client = createClient(app.supabase.url, app.supabase.anonKey);
 
+    // Opsiyonel bağlantı testi
     if (testConnection) {
       try {
-        // Basit sorgu ile bağlantı test et
-        const { error } = await client
-          .from("level_groups")
-          .select("id")
-          .limit(1);
-        if (error) throw error;
+        /*
+         * Tabloya bağımlı olmayan hafif bir istek yapabilmek için
+         * Supabase Auth servisine session sorgusu gönderiyoruz. Bu uç nokta
+         * tüm projelerde varsayılan olarak aktiftir ve herhangi bir tabloya
+         * ihtiyaç duymaz.
+         */
+        const { error: sessionError } = await client.auth.getSession();
+        if (sessionError) throw sessionError;
       } catch (err) {
         throw new Error(
           "Supabase bağlantı testi başarısız: " + (err as Error).message
@@ -61,8 +64,27 @@ class SupabaseManager {
   disconnect(appId: string) {
     const info = this.connections.get(appId);
     if (info) {
-      // Realtime aboneliklerini kapat vb. gerekirse
-      // info.client.removeAllSubscriptions(); (v2 API henüz desteklemiyor)
+      try {
+        // Realtime aboneliklerini kapat
+        // Supabase JS v2
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        if (typeof info.client.removeAllChannels === "function") {
+          // v2 API
+          // @ts-ignore
+          info.client.removeAllChannels();
+        } else if (
+          // @ts-ignore
+          typeof info.client.removeAllSubscriptions === "function"
+        ) {
+          // v1 API
+          // @ts-ignore
+          info.client.removeAllSubscriptions();
+        }
+      } catch (err) {
+        console.warn("Realtime cleanup error:", err);
+      }
+
       this.connections.delete(appId);
       logEvent({ timestamp: Date.now(), appId, event: "disconnect" });
     }

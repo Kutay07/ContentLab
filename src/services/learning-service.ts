@@ -118,12 +118,15 @@ export class LearningService {
   /**
    * Belirli bir seviye grubunu ID ile getirir
    */
-  static async getLevelGroupById(groupId: string): Promise<{
+  static async getLevelGroupById(
+    appId: string,
+    groupId: string
+  ): Promise<{
     data: LevelGroupItem | null;
     error: Error | null;
   }> {
     try {
-      const client = this.getClient();
+      const client = this.getClient(appId);
 
       const { data, error } = await client
         .from("level_groups")
@@ -167,12 +170,15 @@ export class LearningService {
   /**
    * Belirli bir seviyeyi ID ile getirir (bileşenler dahil)
    */
-  static async getLevelById(levelId: string): Promise<{
+  static async getLevelById(
+    appId: string,
+    levelId: string
+  ): Promise<{
     data: LevelItem | null;
     error: Error | null;
   }> {
     try {
-      const client = this.getClient();
+      const client = this.getClient(appId);
 
       const { data, error } = await client
         .from("levels")

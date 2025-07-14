@@ -1,17 +1,30 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useEffect } from "react";
 import { useAuthStore } from "@/stores/auth";
-import { useAppStore } from "@/stores/app";
-import { clearSupabaseClient } from "@/services/supabase";
+import { useSelectedAppStore } from "@/stores/app";
+import { useAppConnections } from "@/stores/appConnections";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 
 export default function Header() {
   const { user, logout, isAuthenticated, isLoading, error } = useAuthStore();
-  const { selectedApp, clearApp } = useAppStore();
+  const { selectedApp, clearApp } = useSelectedAppStore();
   const router = useRouter();
   const pathname = usePathname();
+  const disconnectAll = useAppConnections((s) => s.disconnectAll);
+
+  // Tarayıcı kapanırken tüm bağlantıları kes
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      disconnectAll();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [disconnectAll]);
 
   // Auth sayfalarında header'ı gösterme
   if (pathname && pathname.startsWith("/auth")) {
@@ -24,7 +37,7 @@ export default function Header() {
   }
 
   const handleGoHome = () => {
-    clearSupabaseClient();
+    disconnectAll();
     clearApp();
     router.push("/");
   };
@@ -37,6 +50,9 @@ export default function Header() {
       console.error("Logout error:", error);
     }
   };
+
+  // Uygulama detay sayfasında mı kontrol et
+  const isAppDetailPage = pathname?.startsWith("/app/");
 
   return (
     <>
@@ -63,21 +79,32 @@ export default function Header() {
 
               {/* Active App Info */}
               {selectedApp && (
-                <div className="ml-6 flex items-center space-x-2 text-white/80">
-                  <div className="text-white/40">•</div>
-                  <span className="text-lg">{selectedApp.icon}</span>
-                  <span className="text-sm font-medium">
-                    {selectedApp.name}
-                  </span>
-                  <span className="px-2 py-1 text-xs font-medium rounded-full text-emerald-400 bg-emerald-400/20 border border-emerald-400/30">
-                    Aktif
-                  </span>
+                <div className="ml-6 flex items-center space-x-3">
+                  <div className="w-px h-8 bg-white/20"></div>
+                  <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
+                    <span className="text-2xl">{selectedApp.icon}</span>
+                    <div>
+                      <div className="text-sm font-semibold text-white">
+                        {selectedApp.name}
+                      </div>
+                      <div className="text-xs text-white/60">
+                        {selectedApp.description}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                      <span className="px-2 py-1 text-xs font-medium rounded-full text-emerald-300 bg-emerald-500/20 border border-emerald-500/30">
+                        Bağlı
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Sağ taraf - User Controls */}
-            <div className="flex items-center space-x-4">
+            {!isAppDetailPage && (
+              <div className="flex items-center space-x-4">
               {/* Error notification */}
               {error && (
                 <div className="flex items-center space-x-2 text-red-400 bg-red-400/10 px-3 py-2 rounded-lg border border-red-400/20">
@@ -143,7 +170,8 @@ export default function Header() {
                 </svg>
                 <span>Çıkış</span>
               </button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </header>

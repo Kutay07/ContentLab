@@ -19,11 +19,13 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     useAuthStore();
 
   const router = useRouter();
-  const pathname = usePathname();
+  const rawPath = usePathname();
+  const pathname = rawPath || "";
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/auth/login", "/test-service"];
-  const isPublicRoute = publicRoutes.includes(pathname);
+  const publicRoutes = ["/auth/login", "/test-service"] as const;
+  // startsWith ile dinamik query/segmenter de desteklenir
+  const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r));
 
   useEffect(() => {
     // Initialize auth state on app start
@@ -38,17 +40,18 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   }, [initializeAuth]);
 
   useEffect(() => {
-    // Redirect logic - sadece loading tamamlandığında çalışır
-    if (!isLoading) {
-      // Redirect to login if not authenticated and trying to access protected route
-      if (!isAuthenticated && !isPublicRoute) {
-        router.push("/auth/login");
-      }
+    // Yükleme bitmeden yönlendirme yapma
+    if (isLoading) return;
 
-      // Redirect to home if authenticated and trying to access login page
-      if (isAuthenticated && pathname === "/auth/login") {
-        router.push("/");
-      }
+    // 1) Girişsiz kullanıcı korumalı sayfada ise login'e yönlendir (replace ile history şişmesini ve loop'u engelle)
+    if (!isAuthenticated && !isPublicRoute && pathname !== "/auth/login") {
+      router.replace("/auth/login");
+      return;
+    }
+
+    // 2) Girişli kullanıcı login sayfasında kalırsa ana sayfaya yönlendir
+    if (isAuthenticated && pathname === "/auth/login") {
+      router.replace("/");
     }
   }, [isAuthenticated, isLoading, isPublicRoute, pathname, router]);
 

@@ -64,8 +64,25 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const parsed = LogSchema.parse(body) as LogEntry;
+    // Gövdeyi güvenli bir şekilde oku ve işle
+    const rawBody = await request.text();
+    if (!rawBody) {
+      // Boş gövde gönderildiyse 400 Bad Request dön
+      return Response.json(
+        { error: "Boş isteğe veri gönderilmedi" },
+        { status: 400 }
+      );
+    }
+
+    let jsonBody: unknown;
+    try {
+      jsonBody = JSON.parse(rawBody);
+    } catch {
+      // JSON parse edilemedi
+      return Response.json({ error: "Geçersiz JSON formatı" }, { status: 400 });
+    }
+
+    const parsed = LogSchema.parse(jsonBody) as LogEntry;
 
     await fs.mkdir(LOG_DIR, { recursive: true });
     let logs: LogEntry[] = [];

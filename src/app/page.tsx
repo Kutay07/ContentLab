@@ -11,6 +11,7 @@ import {
   PauseIcon,
   CubeIcon,
 } from "@heroicons/react/24/outline";
+import Particles from "@/components/layout/backgrounds/Particles";
 
 export default function Home() {
   const { user } = useAuthStore();
@@ -50,7 +51,18 @@ export default function Home() {
   return (
     <>
       {/* Tam ekran arka plan - header'ın arkasını da kaplar */}
-      <div className="fixed inset-0 bg-gradient-to-br from-[#060010] via-[#140036] to-slate-950 -z-10"></div>
+      <div className="fixed inset-0 bg-gradient-to-br from-[#060010] via-[#140036] to-slate-950 -z-10">
+        <Particles
+          particleColors={["#ffffff", "#ffffff"]}
+          particleCount={200}
+          particleSpread={10}
+          speed={0.1}
+          particleBaseSize={100}
+          moveParticlesOnHover={true}
+          alphaParticles={false}
+          disableRotation={false}
+        />
+      </div>
 
       {/* İçerik alanı */}
       <div className="relative min-h-screen">
@@ -143,7 +155,7 @@ export default function Home() {
                   <div className="w-3 h-3 bg-emerald-500 rounded-full mr-2"></div>
                   Aktif Uygulamalar
                 </h2>
-                <div className="space-y-4">
+                <div className="flex space-x-4 overflow-x-auto pb-2">
                   {activeApps.map((app) => (
                     <AppCard
                       key={app.id}
@@ -162,7 +174,7 @@ export default function Home() {
                   <div className="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
                   Geliştirme Aşamasında
                 </h2>
-                <div className="space-y-4">
+                <div className="flex space-x-4 overflow-x-auto pb-2">
                   {developmentApps.map((app) => (
                     <AppCard
                       key={app.id}
@@ -181,7 +193,7 @@ export default function Home() {
                   <div className="w-3 h-3 bg-slate-400 rounded-full mr-2"></div>
                   Pasif Uygulamalar
                 </h2>
-                <div className="space-y-4">
+                <div className="flex space-x-4 overflow-x-auto pb-2">
                   {inactiveApps.map((app) => (
                     <AppCard
                       key={app.id}

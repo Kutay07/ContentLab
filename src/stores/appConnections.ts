@@ -10,7 +10,7 @@ interface ConnectionState {
       error?: string;
     };
   };
-  connectApp: (app: AppConfig) => Promise<void>;
+  connectApp: (app: AppConfig, test?: boolean) => Promise<void>;
   disconnectApp: (appId: string) => void;
   disconnectAll: () => void;
   _rehydrate?: () => Promise<void>;
@@ -35,9 +35,9 @@ export const useAppConnections = create<ConnectionState>()(
         } catch {}
       },
 
-      connectApp: async (app: AppConfig) => {
+      connectApp: async (app: AppConfig, test: boolean = true) => {
         try {
-          await supabaseManager.connect(app, true);
+          await supabaseManager.connect(app, test);
           set((state) => ({
             connections: {
               ...state.connections,

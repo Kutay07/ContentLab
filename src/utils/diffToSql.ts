@@ -20,8 +20,9 @@ export function generateSqlFromDiff(
   // Yardımcı kaçış
   const esc = (val: string) => val.replace(/'/g, "''");
 
+  // Valid JSON literal for Postgres: wrap with single quotes and cast
   const json = (obj: any) =>
-    `'$${JSON.stringify(obj).replace(/'/g, "''")}$'::jsonb`;
+    `'${JSON.stringify(obj).replace(/'/g, "''")}'::jsonb`;
 
   // --- Silme işlemleri (önce child'lar) ---
   diff.deleted.components.forEach((c) => {

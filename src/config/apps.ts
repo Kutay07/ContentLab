@@ -11,9 +11,13 @@ export interface AppConfig {
     projectId: string;
   };
   icon: string;
+  /** Icon için görsel URL (opsiyonel) */
+  iconUrl?: string;
   color: string;
   createdAt: string;
   lastUpdated: string;
+  /** Uygulamanın arkaplan görseli */
+  imageUrl?: string;
 }
 
 // Durum renklerini almak için yardımcı fonksiyon
