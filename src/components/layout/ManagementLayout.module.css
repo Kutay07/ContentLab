@@ -1,0 +1,56 @@
+/* ManagementLayout için özel stiller */
+
+.tabResizeHandle {
+  position: relative;
+  width: 4px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: col-resize;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tabResizeHandle:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.tabResizeHandle::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 1px;
+}
+
+.tabResizeHandle:hover::after {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Sekme içeriği için layout */
+.tabContent {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  gap: 8px;
+}
+
+.tabLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.tabButton {
+  flex-shrink: 0;
+}
+
+/* Panel transition efektleri */
+.panelTransition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

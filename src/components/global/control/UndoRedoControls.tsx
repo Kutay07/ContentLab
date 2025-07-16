@@ -246,7 +246,7 @@ export default function UndoRedoControls({
           <button
             onClick={handleUndo}
             disabled={undoStackSize === 0}
-            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed rounded-l-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 disabled:bg-white/10 disabled:text-white/40 disabled:cursor-not-allowed rounded-l-md border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 backdrop-blur-sm"
             title="Geri Al (Ctrl+Z)"
           >
             <svg
@@ -264,7 +264,7 @@ export default function UndoRedoControls({
             </svg>
             <span className="ml-1">Geri Al</span>
             {undoStackSize > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 text-blue-600 rounded">
+              <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-500/30 text-blue-200 rounded">
                 {undoStackSize}
               </span>
             )}
@@ -274,7 +274,7 @@ export default function UndoRedoControls({
           <button
             onClick={() => setShowUndoDropdown(!showUndoDropdown)}
             disabled={undoStackSize === 0}
-            className="inline-flex items-center px-2 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed rounded-r-md border-l-0 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            className="inline-flex items-center px-2 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 disabled:bg-white/10 disabled:text-white/40 disabled:cursor-not-allowed rounded-r-md border-l-0 border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 backdrop-blur-sm"
             title="Geri Alma Geçmişi"
           >
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -289,24 +289,24 @@ export default function UndoRedoControls({
 
         {/* Undo Dropdown */}
         {showUndoDropdown && (
-          <div className="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-            <div className="p-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+          <div className="absolute top-full left-0 mt-1 w-80 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg shadow-xl z-[100]">
+            <div className="p-3 border-b border-white/20 bg-white/5 rounded-t-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-white">
                   Geri Alınabilir İşlemler
                 </span>
                 <div className="flex items-center space-x-2">
                   {selectedUndoItems.size > 0 && (
                     <button
                       onClick={handleSelectedUndoItems}
-                      className="px-2 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded"
+                      className="px-2 py-1 text-xs font-medium text-white bg-blue-500/30 hover:bg-blue-500/50 rounded border border-blue-400/30 backdrop-blur-sm transition-all duration-200"
                     >
                       {selectedUndoItems.size} Seçili Geri Al
                     </button>
                   )}
                   <button
                     onClick={handleClearUndoHistory}
-                    className="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800 border border-red-300 hover:border-red-400 rounded"
+                    className="px-2 py-1 text-xs font-medium text-red-300 hover:text-red-200 border border-red-400/30 hover:border-red-300/50 rounded backdrop-blur-sm transition-all duration-200"
                     title="Geri Alma Geçmişini Temizle"
                   >
                     Temizle
@@ -322,7 +322,7 @@ export default function UndoRedoControls({
 
             <div className="max-h-64 overflow-y-auto">
               {undoHistory.length === 0 ? (
-                <div className="p-4 text-center text-gray-500 text-sm">
+                <div className="p-4 text-center text-white/60 text-sm">
                   Geri alınabilir işlem bulunmuyor
                 </div>
               ) : (
@@ -330,23 +330,23 @@ export default function UndoRedoControls({
                   <button
                     key={item.id}
                     onClick={(e) => handleUndoItemClick(index, e.ctrlKey)}
-                    className={`w-full text-left px-4 py-3 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors ${
+                    className={`w-full text-left px-4 py-3 text-sm hover:bg-blue-500/20 border-b border-white/10 last:border-b-0 transition-colors ${
                       selectedUndoItems.has(index)
-                        ? "bg-blue-100 border-blue-200"
+                        ? "bg-blue-500/30 border-blue-400/30"
                         : ""
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">
+                        <div className="font-medium text-white truncate">
                           {item.label}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-white/60 mt-1">
                           {formatTime(item.timestamp)} • {index + 1} adım
                         </div>
                       </div>
                       {selectedUndoItems.has(index) && (
-                        <div className="ml-2 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                        <div className="ml-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                           <svg
                             className="w-2.5 h-2.5 text-white"
                             fill="currentColor"
@@ -376,7 +376,7 @@ export default function UndoRedoControls({
           <button
             onClick={handleRedo}
             disabled={redoStackSize === 0}
-            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed rounded-l-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 disabled:bg-white/10 disabled:text-white/40 disabled:cursor-not-allowed rounded-l-md border border-white/30 focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-200 backdrop-blur-sm"
             title="İleri Al (Ctrl+Y)"
           >
             <svg
@@ -394,7 +394,7 @@ export default function UndoRedoControls({
             </svg>
             <span className="ml-1">İleri Al</span>
             {redoStackSize > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs bg-green-100 text-green-600 rounded">
+              <span className="ml-1 px-1.5 py-0.5 text-xs bg-green-500/30 text-green-200 rounded">
                 {redoStackSize}
               </span>
             )}
@@ -404,7 +404,7 @@ export default function UndoRedoControls({
           <button
             onClick={() => setShowRedoDropdown(!showRedoDropdown)}
             disabled={redoStackSize === 0}
-            className="inline-flex items-center px-2 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed rounded-r-md border-l-0 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            className="inline-flex items-center px-2 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 disabled:bg-white/10 disabled:text-white/40 disabled:cursor-not-allowed rounded-r-md border-l-0 border border-white/30 focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-200 backdrop-blur-sm"
             title="İleri Alma Geçmişi"
           >
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -419,24 +419,24 @@ export default function UndoRedoControls({
 
         {/* Redo Dropdown */}
         {showRedoDropdown && (
-          <div className="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-            <div className="p-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+          <div className="absolute top-full left-0 mt-1 w-80 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg shadow-xl z-[100]">
+            <div className="p-3 border-b border-white/20 bg-white/5 rounded-t-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-white">
                   İleri Alınabilir İşlemler
                 </span>
                 <div className="flex items-center space-x-2">
                   {selectedRedoItems.size > 0 && (
                     <button
                       onClick={handleSelectedRedoItems}
-                      className="px-2 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded"
+                      className="px-2 py-1 text-xs font-medium text-white bg-green-500/30 hover:bg-green-500/50 rounded border border-green-400/30 backdrop-blur-sm transition-all duration-200"
                     >
                       {selectedRedoItems.size} Seçili İleri Al
                     </button>
                   )}
                   <button
                     onClick={handleClearRedoHistory}
-                    className="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800 border border-red-300 hover:border-red-400 rounded"
+                    className="px-2 py-1 text-xs font-medium text-red-300 hover:text-red-200 border border-red-400/30 hover:border-red-300/50 rounded backdrop-blur-sm transition-all duration-200"
                     title="İleri Alma Geçmişini Temizle"
                   >
                     Temizle
@@ -444,7 +444,7 @@ export default function UndoRedoControls({
                 </div>
               </div>
               {redoHistory.length > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-white/60 mt-1">
                   Ctrl + tıklama ile çoklu seçim yapabilirsiniz
                 </p>
               )}

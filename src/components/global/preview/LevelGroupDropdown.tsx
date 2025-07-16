@@ -63,16 +63,16 @@ const SortableLevel: React.FC<SortableLevelProps> = ({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <div className="relative group">
-        {/* Drag Handle - sol tarafta */}
+      <div className="relative group/level">
+        {/* Drag Handle - sıra kutusunun tam üzerine */}
         <div
           {...attributes}
           {...listeners}
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/70 hover:bg-white cursor-grab active:cursor-grabbing rounded-md shadow border border-gray-300 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          title="Sürüklemek için tutun"
+          className="absolute left-3 top-4 w-8 h-8 bg-blue-200/90 hover:bg-blue-300/90 cursor-grab active:cursor-grabbing rounded-md shadow border border-blue-400 flex items-center justify-center opacity-0 group-hover/level:opacity-100 transition-opacity z-20"
+          title="Seviyeyi sürüklemek için tutun"
         >
           <svg
-            className="w-3 h-3 text-gray-500"
+            className="w-3 h-3 text-blue-700"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -181,73 +181,109 @@ const LevelGroupDropdown: React.FC<LevelGroupDropdownProps> = ({
 
   return (
     <div className={`level-group-dropdown ${className}`}>
-      {/* Level Group Header */}
-      <button
-        onClick={handleToggle}
-        className="w-full flex items-center justify-between p-6 bg-gradient-to-r from-purple-50 to-indigo-50 
-                   hover:from-purple-100 hover:to-indigo-100 rounded-xl border border-purple-200 
-                   transition-all duration-200 mb-2 shadow-sm hover:shadow-md"
+      {/* Level Group Header - Tamamen transparan tasarım */}
+      <div
+        className={`
+        w-full backdrop-blur-md border-2 border-purple-300 rounded-lg 
+        transition-all duration-300 shadow-sm hover:shadow-md mb-2
+        ${isDropdownOpen ? "rounded-b-none border-b-purple-300" : ""}
+      `}
       >
-        <div className="flex items-center">
-          <span className="text-2xl mr-4">📚</span>
-          <div className="text-left">
-            <h2 className="text-xl font-bold text-purple-900">
-              {levelGroup.title}
-            </h2>
-            <div className="flex items-center space-x-6 text-sm text-purple-700 mt-2">
-              <span className="flex items-center">
-                <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
-                Seviye: {sortedLevels.length}
-              </span>
-              <span className="flex items-center">
-                <span className="w-2 h-2 bg-indigo-400 rounded-full mr-2"></span>
-                Bileşen: {totalComponents}
-              </span>
-              <span className="flex items-center">
-                <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                Sıra: {levelGroup.order}
+        <div
+          className="w-full flex items-center justify-between p-4 hover:bg-purple-50/20 
+                       transition-all duration-200 rounded-lg"
+        >
+          <div className="flex items-center flex-1">
+            {/* Sıra numarası kutusu */}
+            <div
+              className="flex-shrink-0 w-8 h-8 bg-purple-100 border border-purple-300 rounded-md 
+                           flex items-center justify-center mr-3"
+            >
+              <span className="text-sm font-semibold text-purple-800">
+                {levelGroup.order}
               </span>
             </div>
+
+            {/* İsim - %40 genişlik */}
+            <div className="flex-1 max-w-[40%] text-left mr-4">
+              <h2 className="text-lg font-semibold text-white break-words">
+                {levelGroup.title}
+              </h2>
+            </div>
+
+            {/* Bilgi kapsülleri */}
+            <div className="flex items-center space-x-2 mr-4">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {sortedLevels.length} Seviye
+              </span>
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {totalComponents} Bileşen
+              </span>
+            </div>
+
+            {/* Butonlar */}
+            <div className="flex items-center space-x-1">
+              {/* Sil butonu */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleGroupDelete();
+                }}
+                className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                title="Seviye Grubunu Sil"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+
+              {/* Düzenle butonu */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // TODO: Düzenleme fonksiyonu eklenecek
+                }}
+                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors"
+                title="Seviye Grubunu Düzenle"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center space-x-2">
-          {/* Delete group */}
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleGroupDelete();
-            }}
-            className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors cursor-pointer"
-            title="Seviye Grubunu Sil"
+          {/* Ok butonu */}
+          <button
+            onClick={handleToggle}
+            className="flex-shrink-0 ml-2 p-2 rounded-md bg-purple-100 border border-purple-300 
+                     hover:bg-purple-200 transition-all duration-200"
+            title={isDropdownOpen ? "Kapat" : "Aç"}
           >
             <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </span>
-
-          <span className="text-sm text-purple-700 mr-3 font-medium">
-            {isDropdownOpen ? "Daralt" : "Genişlet"}
-          </span>
-          <div
-            className={`p-2 rounded-lg bg-white shadow-sm transition-transform duration-200 ${
-              isDropdownOpen ? "rotate-180" : ""
-            }`}
-          >
-            <svg
-              className="w-5 h-5 text-purple-600"
+              className={`w-4 h-4 text-purple-600 transform transition-transform duration-200 ${
+                isDropdownOpen ? "rotate-180" : ""
+              }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -259,90 +295,93 @@ const LevelGroupDropdown: React.FC<LevelGroupDropdownProps> = ({
                 d="M19 9l-7 7-7-7"
               />
             </svg>
-          </div>
+          </button>
         </div>
-      </button>
+      </div>
 
-      {/* Level Group Content */}
+      {/* Level Group Content - Border genişletilmiş */}
       {isDropdownOpen && (
-        <div className="level-group-content mb-2">
-          {sortedLevels.length > 0 ? (
-            <div className="levels-container space-y-1 mb-12">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
-                <span className="w-1 h-4 bg-purple-400 rounded mr-2"></span>
-                Seviyeler ({sortedLevels.length}) - Sürükleyerek sıralayın
-              </h3>
+        <div
+          className="backdrop-blur-md border-2 border-t-0 border-purple-300 
+                       rounded-b-lg shadow-sm mb-2"
+        >
+          <div className="p-4">
+            {sortedLevels.length > 0 ? (
+              <div className="levels-container space-y-1 mb-12">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
+                  <span className="w-1 h-4 bg-purple-400 rounded mr-2"></span>
+                  Seviyeler ({sortedLevels.length}) - Sürükleyerek sıralayın
+                </h3>
 
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={sortedLevels.map((l) => l.id)}
-                  strategy={verticalListSortingStrategy}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
                 >
-                  {sortedLevels.map((level, index) => (
-                    <React.Fragment key={level.id}>
-                      {/* Level öncesi hover alanı */}
-                      <div className="group relative h-3 -mb-1">
-                        <AddLevelButton
-                          order={level.order}
-                          groupId={levelGroup.id}
-                        />
-                      </div>
-
-                      {/* Sortable Level */}
-                      <SortableLevel
-                        level={level}
-                        addedIds={addedIds}
-                        updatedIds={updatedIds}
-                      />
-
-                      {/* Son level değilse sonrası hover alanı */}
-                      {index === sortedLevels.length - 1 && (
-                        <div className="group relative h-3 -mt-1">
+                  <SortableContext
+                    items={sortedLevels.map((l) => l.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {sortedLevels.map((level, index) => (
+                      <React.Fragment key={level.id}>
+                        {/* Level öncesi hover alanı */}
+                        <div className="relative h-3 -mb-1">
                           <AddLevelButton
-                            order={level.order + 1}
+                            order={level.order}
                             groupId={levelGroup.id}
                           />
                         </div>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </SortableContext>
 
-                {/* Drag Overlay */}
-                <DragOverlay>
-                  {activeLevel ? (
-                    <div className="rotate-1 scale-105">
+                        {/* Sortable Level */}
+                        <SortableLevel
+                          level={level}
+                          addedIds={addedIds}
+                          updatedIds={updatedIds}
+                        />
+
+                        {/* Son level değilse sonrası hover alanı */}
+                        {index === sortedLevels.length - 1 && (
+                          <div className="relative h-3 -mt-1">
+                            <AddLevelButton
+                              order={level.order + 1}
+                              groupId={levelGroup.id}
+                            />
+                          </div>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </SortableContext>
+
+                  {/* Drag Overlay */}
+                  <DragOverlay>
+                    {activeLevel ? (
                       <LevelDropdown
                         level={activeLevel}
                         className="shadow-xl border-2 border-blue-300 bg-white"
                         addedIds={addedIds}
                         updatedIds={updatedIds}
                       />
-                    </div>
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
-            </div>
-          ) : (
-            <div className="text-center py-12 text-gray-500">
-              <div className="text-5xl mb-4">🚀</div>
-              <h4 className="text-lg font-medium mb-2">
-                Henüz Seviye Eklenmemiş
-              </h4>
-              <p className="text-sm">
-                Bu seviye grubunda henüz herhangi bir seviye bulunmuyor.
-              </p>
-              {/* Seviye yoksa da hover alanı */}
-              <div className="group relative h-8 mt-6">
-                <AddLevelButton order={1} groupId={levelGroup.id} />
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-5xl mb-4">🚀</div>
+                <h4 className="text-lg font-medium mb-2">
+                  Henüz Seviye Eklenmemiş
+                </h4>
+                <p className="text-sm">
+                  Bu seviye grubunda henüz herhangi bir seviye bulunmuyor.
+                </p>
+                {/* Seviye yoksa da hover alanı */}
+                <div className="relative h-8 mt-6">
+                  <AddLevelButton order={1} groupId={levelGroup.id} />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

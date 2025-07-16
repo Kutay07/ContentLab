@@ -131,7 +131,7 @@ export default function PublishButton({
     <button
       onClick={handlePublish}
       disabled={isPublishing}
-      className={`${className} inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors disabled:opacity-50`}
+      className={`${className} inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-500/30 hover:bg-green-500/50 rounded-md focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-200 disabled:opacity-50 backdrop-blur-sm border border-green-400/30`}
       title="Taslağı Yayınla"
     >
       {isPublishing ? (

@@ -14,5 +14,6 @@ export { default as AddLevelModal } from "./button/AddLevelModal";
 export { default as ControlBar } from "./control/ControlBar";
 export { default as UndoRedoControls } from "./control/UndoRedoControls";
 export { default as DraftControls } from "./control/DraftControls";
+export { default as PanelVisibilityControls } from "./control/PanelVisibilityControls";
 export { default as HierarchyProvider } from "./context/HierarchyProvider";
 export { useHierarchy } from "./context/HierarchyProvider";

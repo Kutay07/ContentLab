@@ -232,7 +232,7 @@ export default function DraftControls({
       {/* Save Draft Button */}
       <button
         onClick={handleSaveDraft}
-        className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+        className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-500/30 hover:bg-blue-500/50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 backdrop-blur-sm border border-blue-400/30"
         title="Taslak Kaydet (Enter)"
       >
         <svg
@@ -254,10 +254,10 @@ export default function DraftControls({
       {/* Autosave Toggle Button */}
       <button
         onClick={() => setAutosaveEnabled((prev) => !prev)}
-        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md border transition-colors ${
+        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md border transition-all duration-200 backdrop-blur-sm ${
           autosaveEnabled
-            ? "bg-green-100 text-green-700 border-green-300 hover:bg-green-200"
-            : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+            ? "bg-green-500/30 text-green-200 border-green-400/30 hover:bg-green-500/50"
+            : "bg-white/20 text-white border-white/30 hover:bg-white/30"
         }`}
         title="Otokayıt Aç/Kapat"
       >
@@ -297,7 +297,7 @@ export default function DraftControls({
       <div className="relative" ref={loadDropdownRef}>
         <button
           onClick={() => setShowLoadDropdown(!showLoadDropdown)}
-          className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-white/20 hover:bg-white/30 rounded-md border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 backdrop-blur-sm"
           title="Taslak Yükle"
         >
           <svg
@@ -322,7 +322,7 @@ export default function DraftControls({
             />
           </svg>
           {savedDrafts.length > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+            <span className="ml-1 px-1.5 py-0.5 text-xs bg-white/20 text-white/80 rounded">
               {savedDrafts.length}
             </span>
           )}
@@ -330,14 +330,14 @@ export default function DraftControls({
 
         {/* Load Dropdown */}
         {showLoadDropdown && (
-          <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-            <div className="p-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+          <div className="absolute top-full right-0 mt-1 w-80 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg shadow-xl z-[100]">
+            <div className="p-3 border-b border-white/20 bg-white/5 rounded-t-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-white">
                   Kaydedilmiş Taslaklar
                 </span>
                 {savedDrafts.length > 0 && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-white/60">
                     {savedDrafts.length} taslak
                   </span>
                 )}

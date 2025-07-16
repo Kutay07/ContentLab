@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import UndoRedoControls from "./UndoRedoControls";
 import DraftControls from "./DraftControls";
 import PublishButton from "./PublishButton";
+import PanelVisibilityControls from "./PanelVisibilityControls";
 
 interface ControlBarProps {
   className?: string;
@@ -22,13 +23,20 @@ export default function ControlBar({ className = "" }: ControlBarProps) {
 
   return (
     <>
+      {/*
+       * Dropdown menülerinin (Undo/Redo, Taslak vb.) alt taraftaki ManagementLayout
+       * bileşeninin altında kalmaması için bu çubuğa yüksek bir z-index tanımlıyoruz.
+       * "relative" konumu yeni bir stacking context oluşturur, "z-50" ise onu
+       * ManagementLayout (z-index: auto) üzerinde konumlandırır.
+       */}
       <div
-        className={`bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-6 ${className}`}
+        className={`relative z-50 bg-white/10 backdrop-blur-md border-b border-white/20 shadow-lg p-3 ${className}`}
       >
         <div className="flex items-center justify-between">
-          {/* Sol taraf - Undo/Redo Kontrolleri */}
-          <div className="flex items-center">
+          {/* Sol taraf - Undo/Redo Kontrolleri + Panel Görünürlük Kontrolleri */}
+          <div className="flex items-center gap-6">
             <UndoRedoControls />
+            <PanelVisibilityControls />
           </div>
 
           {/* Sağ taraf - Draft + Publish Kontrolleri */}
@@ -41,19 +49,19 @@ export default function ControlBar({ className = "" }: ControlBarProps) {
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 z-50">
+        <div className="fixed top-4 right-4 z-[200]">
           <div
-            className={`px-4 py-3 rounded-md shadow-md ${
+            className={`px-4 py-3 rounded-md shadow-lg backdrop-blur-md border ${
               showToast.type === "success"
-                ? "bg-green-100 border border-green-400 text-green-700"
-                : "bg-red-100 border border-red-400 text-red-700"
+                ? "bg-green-500/20 border-green-400/30 text-green-200"
+                : "bg-red-500/20 border-red-400/30 text-red-200"
             }`}
           >
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 {showToast.type === "success" ? (
                   <svg
-                    className="w-5 h-5 text-green-400"
+                    className="w-5 h-5 text-green-300"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -65,7 +73,7 @@ export default function ControlBar({ className = "" }: ControlBarProps) {
                   </svg>
                 ) : (
                   <svg
-                    className="w-5 h-5 text-red-400"
+                    className="w-5 h-5 text-red-300"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >

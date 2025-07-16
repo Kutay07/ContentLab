@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { LevelHierarchy, LevelGroupItem } from "@/types/LevelHierarchy";
 import LevelGroupDropdown from "./LevelGroupDropdown";
+import ContentPreviewHeader from "./ContentPreviewHeader";
 import AddLevelGroupButton from "../button/AddLevelGroupButton";
 import { useHierarchy } from "../context/HierarchyProvider";
 
@@ -23,6 +24,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { snapCenterToCursor } from "@dnd-kit/modifiers";
 
 interface ContentPreviewProps {
   data?: LevelHierarchy; // Keep for backward compatibility, but will use context
@@ -66,15 +68,15 @@ const SortableLevelGroup: React.FC<SortableLevelGroupProps> = ({
   return (
     <div ref={setNodeRef} style={style}>
       <div className="relative group">
-        {/* Drag Handle - sol tarafta */}
+        {/* Drag Handle - sıra kutusunun tam üzerine */}
         <div
           {...attributes}
           {...listeners}
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/70 hover:bg-white cursor-grab active:cursor-grabbing rounded-md shadow border border-gray-300 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute left-3 top-4 w-8 h-8 bg-purple-200/90 hover:bg-purple-300/90 cursor-grab active:cursor-grabbing rounded-md shadow border border-purple-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
           title="Seviye grubunu sürüklemek için tutun"
         >
           <svg
-            className="w-3 h-3 text-gray-500"
+            className="w-3 h-3 text-purple-700"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -82,7 +84,7 @@ const SortableLevelGroup: React.FC<SortableLevelGroupProps> = ({
           </svg>
         </div>
 
-        {/* Visual diff indicators - Plan.md 4.2 specs */}
+        {/* Visual diff indicators */}
         {addedIds.has(levelGroup.id) && (
           <div className="absolute top-2 right-2 z-10">
             <div
@@ -232,11 +234,13 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className={`content-preview ${className}`}>
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
-          <div className="text-center py-12">
-            <div className="text-6xl mb-6">📋</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">{title}</h2>
+      <div className={`content-preview ${className} px-4`}>
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+          <div className="text-center py-8">
+            <div className="text-4xl mb-4">📋</div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-3">
+              {title}
+            </h2>
             <p className="text-gray-600 mb-2">
               Görüntülenecek içerik bulunamadı.
             </p>
@@ -244,7 +248,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
               Henüz herhangi bir seviye grubu oluşturulmamış.
             </p>
             {/* İçerik yoksa da hover alanı */}
-            <div className="group relative h-8 mt-6">
+            <div className="group relative h-8 mt-4">
               <AddLevelGroupButton order={1} />
             </div>
           </div>
@@ -254,90 +258,21 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
   }
 
   return (
-    <div className={`content-preview ${className}`}>
-      {/* Header */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-6 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
-            <div className="flex items-center space-x-6 text-sm text-gray-600">
-              <span className="flex items-center">
-                <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-                Seviye Grupları: {sortedLevelGroups.length}
-                {(addedGroupsCount > 0 || updatedGroupsCount > 0) && (
-                  <span className="ml-2 text-xs">
-                    {addedGroupsCount > 0 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        +{addedGroupsCount}
-                      </span>
-                    )}
-                    {updatedGroupsCount > 0 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 ml-1">
-                        ~{updatedGroupsCount}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-              <span className="flex items-center">
-                <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                Toplam Seviye: {totalLevels}
-                {(addedLevelsCount > 0 || updatedLevelsCount > 0) && (
-                  <span className="ml-2 text-xs">
-                    {addedLevelsCount > 0 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        +{addedLevelsCount}
-                      </span>
-                    )}
-                    {updatedLevelsCount > 0 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 ml-1">
-                        ~{updatedLevelsCount}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-              <span className="flex items-center">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                Toplam Bileşen: {totalComponents}
-                {(addedComponentsCount > 0 || updatedComponentsCount > 0) && (
-                  <span className="ml-2 text-xs">
-                    {addedComponentsCount > 0 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        +{addedComponentsCount}
-                      </span>
-                    )}
-                    {updatedComponentsCount > 0 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 ml-1">
-                        ~{updatedComponentsCount}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setOpenGroups(new Set())}
-              className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 
-                       rounded-lg transition-colors duration-200"
-            >
-              Tümünü Kapat
-            </button>
-            <button
-              onClick={() =>
-                setOpenGroups(new Set(sortedLevelGroups.map((g) => g.id)))
-              }
-              className="px-4 py-2 text-sm bg-purple-100 hover:bg-purple-200 text-purple-700 
-                       rounded-lg transition-colors duration-200"
-            >
-              Tümünü Aç
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className={`content-preview ${className} px-4`}>
+      {/* Header - Modüler komponent */}
+      <ContentPreviewHeader
+        sortedLevelGroups={sortedLevelGroups}
+        openGroups={openGroups}
+        setOpenGroups={setOpenGroups}
+        totalLevels={totalLevels}
+        totalComponents={totalComponents}
+        addedGroupsCount={addedGroupsCount}
+        updatedGroupsCount={updatedGroupsCount}
+        addedLevelsCount={addedLevelsCount}
+        updatedLevelsCount={updatedLevelsCount}
+        addedComponentsCount={addedComponentsCount}
+        updatedComponentsCount={updatedComponentsCount}
+      />
 
       {/* Content */}
       <div className="space-y-0">
@@ -378,18 +313,16 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
           </SortableContext>
 
           {/* Drag Overlay */}
-          <DragOverlay>
+          <DragOverlay modifiers={[snapCenterToCursor]}>
             {activeLevelGroup ? (
-              <div className="rotate-1 scale-105">
-                <LevelGroupDropdown
-                  levelGroup={activeLevelGroup}
-                  isOpen={openGroups.has(activeLevelGroup.id)}
-                  onToggle={() => {}}
-                  addedIds={addedIds}
-                  updatedIds={updatedIds}
-                  className="shadow-xl border-2 border-purple-300 bg-white"
-                />
-              </div>
+              <LevelGroupDropdown
+                levelGroup={activeLevelGroup}
+                isOpen={openGroups.has(activeLevelGroup.id)}
+                onToggle={() => {}}
+                addedIds={addedIds}
+                updatedIds={updatedIds}
+                className="shadow-xl border-2 border-purple-300 bg-white"
+              />
             ) : null}
           </DragOverlay>
         </DndContext>
@@ -403,7 +336,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
       </div>
 
       {/* Footer Statistics */}
-      <div className="mt-8 bg-gray-50 rounded-xl p-4 border border-gray-200">
+      <div className="mt-8 bg-white/10 backdrop-blur-sm rounded-xl p-4">
         <div className="text-center text-sm text-gray-600">
           <span className="font-medium">Özet:</span> Bu önizlemede{" "}
           <span className="font-semibold text-purple-600">
@@ -418,7 +351,7 @@ const ContentPreview: React.FC<ContentPreviewProps> = ({
           bileşen bulunmaktadır.
           {/* Diff summary */}
           {(addedIds.size > 0 || updatedIds.size > 0) && (
-            <div className="mt-2 pt-2 border-t border-gray-300">
+            <div className="mt-2 pt-2 border-t border-gray-300/30">
               <span className="font-medium">Değişiklikler:</span>
               {addedIds.size > 0 && (
                 <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
